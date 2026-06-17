@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "ManaTask",
+    "slug": "mana-task-planner-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/images/manatask-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mana.tasktracker"
+    },
+    "android": {
+      "package": "com.mana.tasktracker"
+    },
+    "plugins": [
+      "expo-av",
+      "expo-asset"
+    ]
+  }
+}
