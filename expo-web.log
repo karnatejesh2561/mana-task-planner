@@ -1,0 +1,12 @@
+
+> mana-task-planner-mobile@1.0.0 web
+> expo start --web --port 8083
+
+Starting project at D:\tejesh\mana-task-planner-mobile
+Starting Metro Bundler
+Waiting on http://localhost:8083
+Logs for your project will appear below.
+Web .\index.ts ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (179/209)
+Web .\index.ts ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (401/402)
+Web Bundled 6218ms index.ts (402 modules)
+ LOG  [web] Logs will appear in the browser console

@@ -1,0 +1,826 @@
+MANA TASK PLANNER – Pixel Perfect Mobile UI Prompt
+
+Create a premium, modern task management mobile application named "Mana Task Planner".
+
+Brand Identity
+
+Use the uploaded Mana Task Planner logo as the inspiration for the color palette.
+
+Primary Colors
+
+Electric Blue: #0A84FF
+Deep Navy: #0B1F4D
+Purple Accent: #8B5CF6
+Orange Accent: #FF7A00
+Pink Accent: #FF4D8D
+
+Background
+Use a very soft premium gradient:
+
+background:
+linear-gradient(
+180deg,
+#FFF7F6 0%,
+#F8F4FF 50%,
+#FFF6F1 100%
+);
+Design Style
+
+Create an iOS-inspired premium productivity app.
+
+Design Language
+Rounded corners: 20px–28px
+Glassmorphism and soft shadows
+Minimal, clean typography
+Soft gradients inspired by the logo
+Plenty of white space
+Smooth card elevations
+Premium startup app aesthetics
+Dribbble and Apple Human Interface inspired
+Typography
+
+Font Family:
+
+SF Pro Display
+Inter (fallback)
+
+Font Sizes:
+
+Hero Title: 44px Bold
+Screen Titles: 34px SemiBold
+Section Titles: 22px SemiBold
+Body: 16px Regular
+Small Labels: 13px Medium
+
+Text Colors:
+
+Primary: #111111
+Secondary: #666666
+Light: #999999
+Bottom Navigation
+
+Height: 88px
+
+Tabs:
+
+Home
+Projects
+Calendar
+Profile
+
+Selected state:
+
+Black circular pill
+White icon
+Soft shadow
+
+Unselected:
+
+Black outline icons
+Gray labels
+SCREEN 1 – Home Dashboard
+
+Safe area top.
+
+Top Header:
+
+Left: Circular profile image (48x48)
+Greeting:
+Good Morning
+Olivia Reed
+Right:
+Circular Add button
+Circular Notification button
+
+Hero Text:
+
+Let's Make
+Today Productive
+
+Font:
+44px
+Bold
+Line-height: 1.1
+
+Progress Card
+
+Large rounded card.
+
+Size:
+Height around 200px.
+
+Background:
+Dark glossy gradient:
+
+linear-gradient(
+135deg,
+#1B1B1B,
+#2A2A2A
+);
+
+Inside:
+
+Left:
+Circular progress ring:
+72%
+
+Ring colors:
+
+White track
+Logo green accent
+Subtle glow
+
+Right:
+Statistics:
+
+12 Total Tasks
+12 Completed Tasks
+12 Pending Tasks
+
+Each row:
+Small rounded icon container.
+
+Today's Tasks Section
+
+Header:
+Today's Tasks
+View All
+
+Filter Chips
+
+Rounded pills:
+
+4 To Do
+2 In Progress
+3 In Review
+
+Selected:
+Background:
+Logo gradient:
+
+linear-gradient(
+90deg,
+#D9ED92,
+#B7E04A
+);
+Task Card
+
+Large white card.
+
+Top:
+High Priority badge
+
+Title:
+Design Landing Page
+
+Bottom:
+Clock icon
+10:30 AM - 11:30 AM
+
+Right:
+Avatar stack
+Arrow icon button
+
+Card Radius:
+28px
+
+Shadow:
+
+0 15px 40px rgba(0,0,0,0.08)
+SCREEN 2 – Calendar & Schedule
+
+Top Header:
+Back button
+Current date:
+Wed, April 26
+
+Right:
+Add button
+Menu button
+
+Hero Title:
+
+Task
+Schedule
+
+Large 2-line typography.
+
+Calendar Pill:
+Icon
+Calendar label
+
+Rounded white pill.
+
+Horizontal Date Selector
+
+Days:
+Mon Tue Wed Thu Fri Sat
+
+Selected date:
+Dark circular pill
+White text
+
+Unselected:
+White circles
+Gray text
+
+Category Filters
+
+Pills:
+
+All
+Work
+Personal
+Favorite
+
+Selected:
+Black background
+White text
+
+Unselected:
+White background
+Black text
+
+Timeline
+
+Section Label:
+☀ Morning
+
+Right:
+Today
+
+Meeting Card
+
+Time:
+9:00 AM
+
+Card:
+Large rounded rectangle.
+
+Title:
+Meeting with Client
+
+Subtitle:
+Client meeting to review project progress and align on goals.
+
+Bottom:
+Avatar stack
+Blue Meet button
+
+Radius:
+30px
+
+Shadow:
+Soft floating shadow.
+
+Second Meeting
+
+11:00 AM
+
+Title:
+Next Month Dribbble Shot Design
+
+Status:
+Purple badge:
+In Progress
+
+Card spacing:
+24px
+
+Bottom Navigation:
+Calendar selected.
+
+Selected tab:
+Black pill background.
+
+SCREEN 3 – Add New Task
+
+Top Navigation:
+Close icon
+Title:
+Add New Task
+Check icon
+
+Form Fields
+
+Task Title
+Description
+
+Inputs:
+White cards
+Radius:
+22px
+
+Placeholder:
+Gray text.
+
+Due Date & Time
+
+Two horizontal cards:
+
+Date:
+April 14, 2026
+
+Time:
+10:00 AM
+
+Icons:
+Outline icons.
+
+Priority Selector
+
+Three outline pills:
+
+Low
+Medium
+High
+
+Colors:
+Low:
+#22C55E
+
+Medium:
+#F59E0B
+
+High:
+#EF4444
+
+Radius:
+999px
+
+Project Selector
+
+Rounded dropdown card.
+
+Icon:
+Purple folder icon.
+
+Text:
+Website Redesign
+
+Chevron icon on right.
+
+Tags
+
+Rounded outline pills:
+
+Design
+UI/UX
+Work
+
+Add
+
+Tag colors:
+Blue-purple outline inspired by logo.
+
+Primary CTA
+
+Large floating button.
+
+Text:
+Create Task
+
+Height:
+64px
+
+Radius:
+32px
+
+Background:
+
+linear-gradient(
+90deg,
+#0A84FF,
+#003D99
+);
+
+Shadow:
+
+0 20px 50px rgba(10,132,255,0.35)
+
+Text:
+White
+Bold
+18px
+
+Micro Interactions
+Buttons scale to 0.98 on press
+Smooth spring animations
+Floating shadows on cards
+Calendar date transitions
+Bottom tab morph animation
+Soft gradient glows inspired by Mana Task logo
+Final Requirement
+
+Create three iPhone 16 Pro screens displayed side-by-side:
+
+Home Dashboard
+Calendar Schedule
+Add New Task
+
+Requirements:
+
+Pixel-perfect spacing
+8px grid system
+Premium startup quality
+Apple-level polish
+Dribbble showcase quality
+Realistic shadows
+Soft pastel gradient background
+Colors derived from the Mana Task Planner logo
+Clean, modern, minimal and highly polished UI suitable for App Store launch and Behance presentation.
+remaning profile screen needed stats screens needed  add for that also prompt
+
+Add these 2 additional screens to your existing prompt so you have a complete 5-screen Mana Task Planner app.
+
+SCREEN 4 – Statistics & Analytics Dashboard
+
+Create a premium productivity analytics screen named:
+
+Productivity
+Statistics
+
+Use the same soft pastel gradient background from previous screens.
+
+Top Header
+
+Left:
+Profile avatar (48x48)
+
+Center:
+Today's date
+
+Right:
+Notification button
+
+Circular white buttons:
+
+Radius: 24px
+Soft shadows
+Hero Analytics Card
+
+Large rounded card.
+
+Height:
+220px
+
+Background:
+
+linear-gradient(
+135deg,
+#0B1F4D,
+#0A84FF,
+#8B5CF6
+);
+
+Radius:
+32px
+
+Shadow:
+
+0 25px 60px rgba(10,132,255,0.25)
+
+Content:
+
+Top:
+"Weekly Productivity"
+
+Middle:
+Large Percentage
+
+87%
+
+Subtitle:
+
+Tasks completed this week
+
+Bottom:
+Progress line chart.
+
+White semi-transparent graph.
+
+Analytics Cards Grid
+
+2 x 2 grid.
+
+Card Radius:
+28px
+
+Card Height:
+140px
+
+White glass cards.
+
+Card 1:
+
+Icon:
+✅
+
+Title:
+Completed
+
+Value:
+128
+
+Progress:
++12%
+
+Accent:
+Blue
+
+Card 2:
+
+Icon:
+⏳
+
+Title:
+Pending
+
+Value:
+32
+
+Progress:
+-8%
+
+Accent:
+Orange
+
+Card 3:
+
+Icon:
+🔥
+
+Title:
+Focus Hours
+
+Value:
+46h
+
+Progress:
++20%
+
+Accent:
+Purple
+
+Card 4:
+
+Icon:
+🎯
+
+Title:
+Goals Achieved
+
+Value:
+18
+
+Progress:
++9%
+
+Accent:
+Pink
+
+Weekly Activity Chart
+
+Section Title:
+
+Weekly Activity
+
+Card:
+Large rounded card.
+
+Radius:
+30px
+
+Background:
+White.
+
+Inside:
+Animated bar chart.
+
+Days:
+
+Mon
+Tue
+Wed
+Thu
+Fri
+Sat
+Sun
+
+Bars:
+Gradient:
+
+linear-gradient(
+180deg,
+#0A84FF,
+#8B5CF6
+);
+
+Friday tallest bar.
+
+Productivity Distribution
+
+Section:
+
+Task Categories
+
+Card:
+White rounded card.
+
+Radius:
+30px
+
+Inside:
+Donut chart.
+
+Categories:
+
+Work — 45%
+Personal — 25%
+Study — 20%
+Health — 10%
+
+Donut colors:
+
+Work:
+#0A84FF
+
+Personal:
+#8B5CF6
+
+Study:
+#FF7A00
+
+Health:
+#22C55E
+
+Bottom Navigation:
+Statistics tab selected.
+
+Selected state:
+Black pill background with white chart icon.
+
+SCREEN 5 – Profile Screen
+
+Create a premium profile page with Apple-quality aesthetics.
+
+Background:
+Soft gradient.
+
+Header
+
+Center Title:
+
+Profile
+
+Right:
+Settings button.
+
+Circular white icon button.
+
+Profile Card
+
+Large floating card.
+
+Radius:
+36px
+
+Background:
+White with subtle glass effect.
+
+Shadow:
+
+0 20px 50px rgba(0,0,0,0.08)
+
+Content:
+
+Large profile picture:
+100x100
+
+Name:
+
+Olivia Reed
+
+Role:
+
+Product Designer
+
+Email:
+
+olivia.reed@gmail.com
+Achievement Badges
+
+Horizontal cards:
+
+🏆 Productivity Star
+🔥 30-Day Streak
+🎯 Goal Master
+
+Small gradient badges.
+
+Colors inspired from logo:
+Blue
+Purple
+Orange
+
+Performance Summary
+
+3 equal cards.
+
+Tasks Done:
+128
+
+Projects:
+12
+
+Productivity:
+87%
+
+Cards:
+Radius:
+24px
+
+White glassmorphism cards.
+
+Account Options List
+
+Rounded list cards.
+
+Items:
+
+👤 Edit Profile
+🔔 Notifications
+🎨 Appearance
+🔒 Privacy
+🌐 Language
+❓ Help Center
+🚪 Logout
+
+Each row:
+
+Left icon
+Title
+Chevron arrow
+
+Height:
+64px
+
+Radius:
+22px
+
+Shadow:
+
+0 10px 30px rgba(0,0,0,0.04)
+Premium Card
+
+Bottom floating upgrade card.
+
+Background:
+
+linear-gradient(
+135deg,
+#0B1F4D,
+#0A84FF,
+#8B5CF6
+);
+
+Radius:
+32px
+
+Content:
+
+Upgrade to Pro
+Unlock unlimited projects,
+advanced analytics and cloud sync.
+
+Button:
+
+Get Premium
+
+White pill button.
+
+Final Showcase Prompt
+
+Create a pixel-perfect iPhone 16 Pro productivity application called "Mana Task Planner" consisting of 5 screens displayed side-by-side for Behance and Dribbble presentation:
+
+Home Dashboard
+Calendar Schedule
+Add New Task
+Productivity Statistics & Analytics
+Profile & Settings
+
+Requirements:
+
+Apple Human Interface Guidelines
+8pt grid system
+Premium startup quality
+Ultra-clean spacing
+Rounded cards (20–36px)
+Glassmorphism effects
+Soft shadows and realistic depth
+Smooth gradients inspired by the Mana Task logo (Electric Blue, Navy, Purple, Orange, Pink)
+SF Pro Display typography
+Pixel-perfect alignment and spacing
+Dribbble showcase quality
+App Store launch-ready UI
+Modern, elegant, highly polished productivity experience with beautiful micro-interactions and subtle animations.
