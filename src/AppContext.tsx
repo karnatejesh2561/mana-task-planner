@@ -21,103 +21,157 @@ export const COLORS = {
     orangeAccent: '#FF6B00',
     goldenOrange: '#FF9A00',
     coralRed: '#FF3D3D',
-    gradientStart: '#00A8FF',
-    gradientMid: '#FF2D7A',
+    gradientStart: '#008DFF',
+    gradientMid: '#FF6B00',
     gradientEnd: '#FF9A00',
-    bgTop: '#DCEEFF',
-    bgMid: '#E7DFFF',
-    bgBottom: '#FFE4D1',
-    bgBlue: '#D4E8FF',
-    bgPurple: '#E1D8FF',
-    bgOrange: '#FFDCC4',
-    bgBlack: '#000',
-    textPrimary: '#082B73',
-    textSecondary: '#475569',
-    textLight: '#94A3B8',
-    cardWhite: '#FFFFFF',
-    cardDark1: '#0F172A',
-    cardDark2: '#1E293B',
-    borderLight: '#D6E4FF',
-    borderMedium: '#B8CCFF',
+    bgTop: '#0A1628',
+    bgMid: '#0E1F3D',
+    bgBottom: '#1C0D06',
+    bgBlue: 'rgba(0,141,255,0.12)',
+    bgPurple: 'rgba(0,141,255,0.08)',
+    bgOrange: 'rgba(255,107,0,0.12)',
+    bgBlack: '#06080F',
+    textPrimary: '#F4F8FF',
+    textSecondary: 'rgba(244,248,255,0.65)',
+    textLight: 'rgba(244,248,255,0.38)',
+    cardWhite: 'rgba(255,255,255,0.08)',
+    cardDark1: 'rgba(255,255,255,0.05)',
+    cardDark2: 'rgba(255,255,255,0.03)',
+    borderLight: 'rgba(255,255,255,0.10)',
+    borderMedium: 'rgba(255,255,255,0.16)',
     success: '#22C55E',
     warning: '#F59E0B',
     error: '#EF4444',
+    // Glass tokens
+    glassBg: 'rgba(255,255,255,0.08)',
+    glassBgStrong: 'rgba(255,255,255,0.14)',
+    glassBgMuted: 'rgba(255,255,255,0.05)',
+    glassInput: 'rgba(255,255,255,0.07)',
+    glassPressed: 'rgba(255,255,255,0.16)',
+    glassBorder: 'rgba(255,255,255,0.15)',
+    glassBorderStrong: 'rgba(255,255,255,0.22)',
+    glassHighlight: 'rgba(255,255,255,0.18)',
+    glassOverlay: 'rgba(0,0,0,0.72)',
+    glassShadow: '#000000',
+    glassShadowOpacity: 0.12,
+    glassElevation: 8,
+    glassRadius: 18,
+    glassRadiusLg: 24,
+    glowBlue: 'rgba(0,141,255,0.35)',
+    glowOrange: 'rgba(255,107,0,0.35)',
+    glowGold: 'rgba(255,154,0,0.25)',
+    orbBlue: 'rgba(0,141,255,0.14)',
+    orbOrange: 'rgba(255,107,0,0.12)',
+    tabBarGlass: 'rgba(6,8,15,0.88)',
 };
 
 export const LIGHT_THEME = {
     ...COLORS,
     scheme: 'light' as const,
-    background: '#FAFAFF',
+    bgTop: '#DCEEFF',
+    bgMid: '#E7DFFF',
+    bgBottom: '#FFE4D1',
+    background: '#EEF4FF',
     backgroundAlt: '#FFFFFF',
-    surface: '#FFFFFF',
-    surfaceAlt: '#F6F6FB',
-    surfaceMuted: '#F8F8FB',
-    text: '#090910',
-    textPrimary: '#082B73',
+    surface: 'rgba(255,255,255,0.72)',
+    surfaceAlt: 'rgba(255,255,255,0.55)',
+    surfaceMuted: 'rgba(255,255,255,0.45)',
+    text: '#0B1F4D',
+    textPrimary: '#0B1F4D',
     textSecondary: '#475569',
-    textMuted: '#777783',
+    textMuted: '#6B7280',
     textInverted: '#FFFFFF',
-    icon: '#111111',
-    border: '#E6E6EB',
-    divider: '#ECECF1',
+    icon: '#0B1F4D',
+    border: 'rgba(0,0,0,0.08)',
+    divider: 'rgba(0,0,0,0.06)',
     overlay: 'rgba(0,0,0,0.32)',
-    shadow: '#111111',
-    tabInactive: '#1D1D21',
-    input: '#FFFFFF',
-    inputMuted: '#F8F6FF',
-    placeholder: '#81818A',
-    dangerBg: '#FFECEC',
-    errorBg: '#FFF0F0',
-    errorBorder: '#FFD0D0',
-    avatarBg: '#E4EDFF',
-    avatarInner: '#CFE0FF',
-    cardShadowOpacity: 0.08,
-    inputBg: '#FFFFFF',
-    inputBorder: '#E8EDF5',
+    shadow: '#003080',
+    tabInactive: '#6B7280',
+    input: 'rgba(255,255,255,0.85)',
+    inputMuted: 'rgba(255,255,255,0.65)',
+    placeholder: '#9CA3AF',
+    dangerBg: 'rgba(239,68,68,0.08)',
+    errorBg: 'rgba(239,68,68,0.06)',
+    errorBorder: 'rgba(239,68,68,0.20)',
+    avatarBg: 'rgba(0,141,255,0.12)',
+    avatarInner: 'rgba(0,141,255,0.20)',
+    cardShadowOpacity: 0.10,
+    inputBg: 'rgba(255,255,255,0.80)',
+    inputBorder: 'rgba(0,0,0,0.08)',
     inputFocusBorder: '#008DFF',
     textDark: '#0B1F4D',
     textGray: '#6B7280',
+    glassBg: 'rgba(255,255,255,0.52)',
+    glassBgStrong: 'rgba(255,255,255,0.72)',
+    glassBgMuted: 'rgba(255,255,255,0.38)',
+    glassInput: 'rgba(255,255,255,0.64)',
+    glassPressed: 'rgba(255,255,255,0.82)',
+    glassBorder: 'rgba(255,255,255,0.56)',
+    glassBorderStrong: 'rgba(255,255,255,0.75)',
+    glassHighlight: 'rgba(255,255,255,0.82)',
+    glassOverlay: 'rgba(0,0,0,0.32)',
+    glassShadow: '#003080',
+    glassShadowOpacity: 0.12,
+    glassElevation: 9,
+    glassRadius: 18,
+    glassRadiusLg: 24,
+    tabBarGlass: 'rgba(255,255,255,0.74)',
 };
 
 export const DARK_THEME = {
     ...COLORS,
     scheme: 'dark' as const,
-    background: '#070A12',
-    backgroundAlt: '#0B1020',
-    surface: '#111827',
-    surfaceAlt: '#182235',
-    surfaceMuted: '#151D2E',
-    text: '#F8FAFC',
-    textPrimary: '#EAF3FF',
-    textSecondary: '#CBD5E1',
-    textMuted: '#94A3B8',
+    bgTop: '#0A1628',
+    bgMid: '#0E1F3D',
+    bgBottom: '#1C0D06',
+    background: '#06080F',
+    backgroundAlt: '#0A1220',
+    surface: 'rgba(255,255,255,0.06)',
+    surfaceAlt: 'rgba(255,255,255,0.09)',
+    surfaceMuted: 'rgba(255,255,255,0.04)',
+    text: '#F4F8FF',
+    textPrimary: '#F4F8FF',
+    textSecondary: 'rgba(244,248,255,0.65)',
+    textMuted: 'rgba(244,248,255,0.38)',
     textInverted: '#FFFFFF',
-    icon: '#F8FAFC',
-    border: '#2A3650',
-    divider: '#263247',
-    overlay: 'rgba(0,0,0,0.62)',
+    icon: '#F4F8FF',
+    border: 'rgba(255,255,255,0.10)',
+    divider: 'rgba(255,255,255,0.07)',
+    overlay: 'rgba(0,0,0,0.72)',
     shadow: '#000000',
-    tabInactive: '#CBD5E1',
-    bgTop: '#061525',
-    bgMid: '#111633',
-    bgBottom: '#241420',
-    input: '#101827',
-    inputMuted: '#151D2E',
-    placeholder: '#8FA0B8',
-    dangerBg: 'rgba(239,68,68,0.14)',
-    errorBg: 'rgba(239,68,68,0.12)',
-    errorBorder: 'rgba(239,68,68,0.35)',
-    avatarBg: '#1E2B44',
-    avatarInner: '#263A5D',
-    cardShadowOpacity: 0.22,
-    inputBg: '#101827',
-    inputBorder: '#2A3650',
+    tabInactive: 'rgba(244,248,255,0.40)',
+    input: 'rgba(255,255,255,0.06)',
+    inputMuted: 'rgba(255,255,255,0.04)',
+    placeholder: 'rgba(244,248,255,0.35)',
+    dangerBg: 'rgba(239,68,68,0.12)',
+    errorBg: 'rgba(239,68,68,0.10)',
+    errorBorder: 'rgba(239,68,68,0.30)',
+    avatarBg: 'rgba(0,141,255,0.18)',
+    avatarInner: 'rgba(0,141,255,0.28)',
+    cardShadowOpacity: 0.30,
+    inputBg: 'rgba(255,255,255,0.06)',
+    inputBorder: 'rgba(255,255,255,0.10)',
     inputFocusBorder: '#008DFF',
-    textDark: '#EAF3FF',
-    textGray: '#B6C2D2',
-    blue: '#3AA3FF',
-    blueDeep: '#1E6FFF',
-    navy: '#EAF3FF',
+    textDark: '#F4F8FF',
+    textGray: 'rgba(244,248,255,0.55)',
+    blue: '#008DFF',
+    blueDeep: '#1565C0',
+    navy: '#F4F8FF',
+    glassBg: 'rgba(255,255,255,0.08)',
+    glassBgStrong: 'rgba(255,255,255,0.14)',
+    glassBgMuted: 'rgba(255,255,255,0.05)',
+    glassInput: 'rgba(255,255,255,0.07)',
+    glassPressed: 'rgba(255,255,255,0.16)',
+    glassBorder: 'rgba(255,255,255,0.15)',
+    glassBorderStrong: 'rgba(255,255,255,0.22)',
+    glassHighlight: 'rgba(255,255,255,0.18)',
+    glassOverlay: 'rgba(0,0,0,0.72)',
+    glassShadow: '#000000',
+    glassShadowOpacity: 0.22,
+    glassElevation: 10,
+    glassRadius: 18,
+    glassRadiusLg: 24,
+    tabBarGlass: 'rgba(6,8,15,0.90)',
 };
 
 export type AppTheme = typeof LIGHT_THEME | typeof DARK_THEME;
@@ -149,8 +203,52 @@ interface TaskRow {
     description: string | null;
     due_date: string;
     due_time: string;
+    time_zone: string | null;
     status: 'pending' | 'completed';
 }
+
+interface NotificationSettingsRow {
+    user_id: string;
+    master_enabled: boolean;
+    task_reminders: boolean;
+    task_due_today: boolean;
+    task_overdue: boolean;
+    task_completed: boolean;
+    tips_and_suggestions: boolean;
+    promotions: boolean;
+    default_reminder_minutes: number;
+    snooze_minutes: number;
+    quiet_hours_start: string;
+    quiet_hours_end: string;
+}
+
+export interface NotificationSettingsState {
+    masterEnabled: boolean;
+    taskReminders: boolean;
+    taskDueToday: boolean;
+    taskOverdue: boolean;
+    taskCompleted: boolean;
+    tipsAndSuggestions: boolean;
+    promotions: boolean;
+    defaultReminderMinutes: number;
+    snoozeMinutes: number;
+    quietHoursStart: string;
+    quietHoursEnd: string;
+}
+
+const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettingsState = {
+    masterEnabled: true,
+    taskReminders: true,
+    taskDueToday: true,
+    taskOverdue: true,
+    taskCompleted: false,
+    tipsAndSuggestions: false,
+    promotions: false,
+    defaultReminderMinutes: 15,
+    snoozeMinutes: 10,
+    quietHoursStart: '22:00:00',
+    quietHoursEnd: '07:00:00',
+};
 
 interface AppContextType {
     colorScheme: 'light' | 'dark';
@@ -199,6 +297,11 @@ interface AppContextType {
         focusHours: string;
         goalsAchieved: number;
     };
+    notificationSettings: NotificationSettingsState;
+    notificationSettingsReady: boolean;
+    notificationBellCount: number;
+    updateNotificationSettings: (patch: Partial<NotificationSettingsState>) => Promise<ActionResult>;
+    refreshNotificationBellCount: (targetUserId?: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -206,6 +309,13 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const mapDbStatusToTaskStatus = (status: TaskRow['status']): TaskStatus => (status === 'completed' ? 'Completed' : 'To Do');
 const mapTaskStatusToDb = (status: TaskStatus): TaskRow['status'] => (status === 'Completed' ? 'completed' : 'pending');
+const getDeviceTimeZone = () => {
+    try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    } catch {
+        return 'UTC';
+    }
+};
 
 const formatJoinedAt = (value?: string) => {
     if (!value) return 'Today';
@@ -240,6 +350,38 @@ const mapTaskRowToTask = (row: TaskRow): Task => {
     };
 };
 
+const mapSettingsRowToState = (row?: NotificationSettingsRow | null): NotificationSettingsState => {
+    if (!row) return DEFAULT_NOTIFICATION_SETTINGS;
+    return {
+        masterEnabled: row.master_enabled,
+        taskReminders: row.task_reminders,
+        taskDueToday: row.task_due_today,
+        taskOverdue: row.task_overdue,
+        taskCompleted: row.task_completed,
+        tipsAndSuggestions: row.tips_and_suggestions,
+        promotions: row.promotions,
+        defaultReminderMinutes: row.default_reminder_minutes,
+        snoozeMinutes: row.snooze_minutes,
+        quietHoursStart: row.quiet_hours_start,
+        quietHoursEnd: row.quiet_hours_end,
+    };
+};
+
+const mapStateToSettingsUpsert = (userId: string, state: NotificationSettingsState) => ({
+    user_id: userId,
+    master_enabled: state.masterEnabled,
+    task_reminders: state.taskReminders,
+    task_due_today: state.taskDueToday,
+    task_overdue: state.taskOverdue,
+    task_completed: state.taskCompleted,
+    tips_and_suggestions: state.tipsAndSuggestions,
+    promotions: state.promotions,
+    default_reminder_minutes: state.defaultReminderMinutes,
+    snooze_minutes: state.snoozeMinutes,
+    quiet_hours_start: state.quietHoursStart,
+    quiet_hours_end: state.quietHoursEnd,
+});
+
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const systemScheme = useColorScheme();
     const [themeOverride, setThemeOverride] = useState<'light' | 'dark' | null>(null);
@@ -251,6 +393,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [isAuthReady, setIsAuthReady] = useState(false);
     const [user, setUser] = useState<User | null>(null);
     const [tasks, setTasks] = useState<Task[]>([]);
+    const [notificationSettings, setNotificationSettings] = useState<NotificationSettingsState>(DEFAULT_NOTIFICATION_SETTINGS);
+    const [notificationSettingsReady, setNotificationSettingsReady] = useState(false);
+    const [notificationBellCount, setNotificationBellCount] = useState(0);
     const [projects] = useState<Project[]>(mockProjects);
     const [assignees] = useState<TaskAssignee[]>(mockAssignees);
 
@@ -285,7 +430,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const client = assertSupabaseConfigured();
         const { data, error } = await client
             .from('tasks')
-            .select('id, user_id, title, description, due_date, due_time, status')
+            .select('id, user_id, title, description, due_date, due_time, time_zone, status')
             .eq('user_id', userId)
             .order('due_date', { ascending: true })
             .order('due_time', { ascending: true });
@@ -293,10 +438,101 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setTasks(((data || []) as TaskRow[]).map(mapTaskRowToTask));
     };
 
+    const syncPendingTasksTimeZone = async (userId: string) => {
+        const client = assertSupabaseConfigured();
+        const timeZone = getDeviceTimeZone();
+
+        // Keep pending tasks aligned with current device time zone for reminder scheduling.
+        await client
+            .from('tasks')
+            .update({ time_zone: timeZone })
+            .eq('user_id', userId)
+            .eq('status', 'pending')
+            .is('time_zone', null);
+
+        await client
+            .from('tasks')
+            .update({ time_zone: timeZone })
+            .eq('user_id', userId)
+            .eq('status', 'pending')
+            .neq('time_zone', timeZone);
+    };
+
+    const loadNotificationSettings = async (userId: string) => {
+        const client = assertSupabaseConfigured();
+        const { data, error } = await client
+            .from('user_notification_settings')
+            .select('user_id, master_enabled, task_reminders, task_due_today, task_overdue, task_completed, tips_and_suggestions, promotions, default_reminder_minutes, snooze_minutes, quiet_hours_start, quiet_hours_end')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (!data) {
+            const seed = mapStateToSettingsUpsert(userId, DEFAULT_NOTIFICATION_SETTINGS);
+            const { error: seedError } = await client
+                .from('user_notification_settings')
+                .upsert(seed, { onConflict: 'user_id' });
+            if (seedError) throw seedError;
+            setNotificationSettings(DEFAULT_NOTIFICATION_SETTINGS);
+            return;
+        }
+
+        setNotificationSettings(mapSettingsRowToState(data as NotificationSettingsRow));
+    };
+
+    const refreshNotificationBellCount = async (targetUserId?: string) => {
+        const resolvedUserId = targetUserId || user?.id;
+        if (!resolvedUserId) {
+            setNotificationBellCount(0);
+            return;
+        }
+
+        try {
+            const client = assertSupabaseConfigured();
+            const now = new Date().toISOString();
+            const { count, error } = await client
+                .from('task_notifications')
+                .select('id', { count: 'exact', head: true })
+                .eq('user_id', resolvedUserId)
+                .eq('status', 'pending')
+                .lte('scheduled_for', now);
+            if (error) throw error;
+            setNotificationBellCount(count || 0);
+        } catch (error) {
+            console.warn('Unable to refresh notification badge', error);
+        }
+    };
+
+    const updateNotificationSettings = async (patch: Partial<NotificationSettingsState>): Promise<ActionResult> => {
+        if (!user) return { success: false, error: t('genericError') };
+
+        const nextState = {
+            ...notificationSettings,
+            ...patch,
+        };
+
+        try {
+            const client = assertSupabaseConfigured();
+            const payload = mapStateToSettingsUpsert(user.id, nextState);
+            const { error } = await client
+                .from('user_notification_settings')
+                .upsert(payload, { onConflict: 'user_id' });
+            if (error) return { success: false, error: error.message };
+            setNotificationSettings(nextState);
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error instanceof Error ? error.message : t('genericError') };
+        }
+    };
+
     const hydrateSession = async (session: Session | null) => {
         if (!session?.user) {
             setUser(null);
             setTasks([]);
+            setNotificationSettings(DEFAULT_NOTIFICATION_SETTINGS);
+            setNotificationSettingsReady(false);
+            setNotificationBellCount(0);
             setIsAuthReady(true);
             return;
         }
@@ -304,12 +540,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         try {
             const profile = await loadProfile(session.user);
             setUser(createUserState(session.user, profile));
+            await syncPendingTasksTimeZone(session.user.id);
             await loadTasks(session.user.id);
+            await loadNotificationSettings(session.user.id);
+            await refreshNotificationBellCount(session.user.id);
             await syncPushTokenToBackendAsync(session.user.id);
         } catch (error) {
             console.warn('Failed to hydrate session', error);
             setUser(createUserState(session.user, null));
         } finally {
+            setNotificationSettingsReady(true);
             setIsAuthReady(true);
         }
     };
@@ -411,6 +651,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (supabase) await supabase.auth.signOut();
         setUser(null);
         setTasks([]);
+        setNotificationSettings(DEFAULT_NOTIFICATION_SETTINGS);
+        setNotificationSettingsReady(false);
+        setNotificationBellCount(0);
     };
 
     const updateProfile = async (profile: { name: string; email: string; about: string; password?: string; photoUri?: string }): Promise<ActionResult> => {
@@ -474,10 +717,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 description: taskData.description.trim() || null,
                 due_date: dueDate,
                 due_time: dueTime,
+                time_zone: getDeviceTimeZone(),
                 status: 'pending',
             });
             if (error) return { success: false, error: error.message };
             await loadTasks(user.id);
+            await refreshNotificationBellCount();
             return { success: true };
         } catch (error) {
             return { success: false, error: error instanceof Error ? error.message : t('unableCreateTask') };
@@ -505,11 +750,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                     description: taskData.description.trim() || null,
                     due_date: dueDate,
                     due_time: dueTime,
+                    time_zone: getDeviceTimeZone(),
                 })
                 .eq('id', taskId)
                 .eq('user_id', user.id);
             if (error) return { success: false, error: error.message };
             await loadTasks(user.id);
+            await refreshNotificationBellCount();
             return { success: true };
         } catch (error) {
             return { success: false, error: error instanceof Error ? error.message : t('unableCreateTask') };
@@ -522,6 +769,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             const client = assertSupabaseConfigured();
             await client.from('tasks').update({ status: mapTaskStatusToDb(status) }).eq('id', taskId).eq('user_id', user.id);
             await loadTasks(user.id);
+            await refreshNotificationBellCount();
         } catch (error) {
             console.warn('Unable to update task status', error);
         }
@@ -533,6 +781,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             const client = assertSupabaseConfigured();
             await client.from('tasks').delete().eq('id', taskId).eq('user_id', user.id);
             await loadTasks(user.id);
+            await refreshNotificationBellCount();
         } catch (error) {
             console.warn('Unable to delete task', error);
         }
@@ -584,6 +833,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             updateTaskStatus,
             deleteTask,
             stats,
+            notificationSettings,
+            notificationSettingsReady,
+            notificationBellCount,
+            updateNotificationSettings,
+            refreshNotificationBellCount,
         }}>
             {children}
         </AppContext.Provider>

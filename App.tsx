@@ -14,13 +14,15 @@ import { ProfileSettings } from './src/screens/ProfileSettings';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
 import { ForgotPasswordScreen } from './src/screens/ForgotPasswordScreen';
+import { ReminderInbox } from './src/screens/ReminderInbox';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Task } from './src/types';
 import { configureNotificationsAsync } from './src/notifications';
+import { glassButton, glassPanel } from './src/theme/glass';
 
 type AuthScreen = 'Login' | 'Register' | 'ForgotPassword';
-type AppTab = 'Home' | 'Calendar' | 'Settings';
+type AppTab = 'Home' | 'Calendar' | 'Settings' | 'Notifications';
 type TaskDraft = { dueDate?: string; dueTime?: string };
 
 const AppContent: React.FC = () => {
@@ -108,6 +110,7 @@ const AppContent: React.FC = () => {
                         onNavigate={navigateToTab}
                         onAddTaskPress={() => isShowcase ? null : openCreateTask()}
                         onTaskPress={(task) => isShowcase ? null : openEditTask(task)}
+                        onBellPress={() => isShowcase ? null : setActiveTab('Notifications')}
                     />
                 );
             case 'Calendar':
@@ -135,8 +138,17 @@ const AppContent: React.FC = () => {
                 );
             case 'Settings':
                 return <ProfileSettings onNavigate={navigateToTab} onLogout={handleLogout} />;
+            case 'Notifications':
+                return <ReminderInbox onBack={() => setActiveTab('Home')} />;
             default:
-                return <HomeDashboard onNavigate={navigateToTab} onAddTaskPress={openCreateTask} onTaskPress={openEditTask} />;
+                return (
+                    <HomeDashboard
+                        onNavigate={navigateToTab}
+                        onAddTaskPress={openCreateTask}
+                        onTaskPress={openEditTask}
+                        onBellPress={() => setActiveTab('Notifications')}
+                    />
+                );
         }
     };
 
@@ -233,21 +245,21 @@ const AppContent: React.FC = () => {
 
                         <TouchableOpacity style={styles.tabButton} onPress={() => setActiveTab('Home')} activeOpacity={0.8}>
                             <View style={styles.inactiveTabContent}>
-                                <Ionicons name="list-outline" size={25} color={activeTab === 'Home' ? theme.purpleAccent : theme.tabInactive} />
+                                <Ionicons name="list-outline" size={25} color={activeTab === 'Home' ? theme.electricBlue : theme.tabInactive} />
                                 <Text style={[styles.tabLabel, activeTab === 'Home' && styles.activeTabLabel]}>{t('tasks')}</Text>
                             </View>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.tabButton} onPress={() => setActiveTab('Calendar')} activeOpacity={0.8}>
                             <View style={styles.inactiveTabContent}>
-                                <Ionicons name="calendar-outline" size={25} color={activeTab === 'Calendar' ? theme.purpleAccent : theme.tabInactive} />
+                                <Ionicons name="calendar-outline" size={25} color={activeTab === 'Calendar' ? theme.electricBlue : theme.tabInactive} />
                                 <Text style={[styles.tabLabel, activeTab === 'Calendar' && styles.activeTabLabel]}>{t('calendar')}</Text>
                             </View>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.tabButton} onPress={() => setActiveTab('Settings')} activeOpacity={0.8}>
                             <View style={styles.inactiveTabContent}>
-                                <Ionicons name="settings-outline" size={25} color={activeTab === 'Settings' ? theme.purpleAccent : theme.tabInactive} />
+                                <Ionicons name="settings-outline" size={25} color={activeTab === 'Settings' ? theme.electricBlue : theme.tabInactive} />
                                 <Text style={[styles.tabLabel, activeTab === 'Settings' && styles.activeTabLabel]}>{t('settings')}</Text>
                             </View>
                         </TouchableOpacity>
@@ -268,109 +280,51 @@ export default function App() {
 }
 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
-    // ── Desktop ─────────────────────────────────────────────────────────────────
-    desktopContainer: {
-        flex: 1,
-        minHeight: '100%',
-        width: '100%',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 30,
-    },
-    desktopHeader: {
-        alignItems: 'center',
-        width: '100%',
-        paddingHorizontal: 48,
-        marginBottom: 8,
-    },
-    desktopLogo: {
-        width: 280,
-        height: 96,
-        marginBottom: 6,
-    },
-    showcaseTagline: {
-        fontSize: 11,
-        fontWeight: '800',
-        color: theme.textPrimary,
-        letterSpacing: 3,
-        opacity: 0.55,
-        marginBottom: 10,
-    },
-    showcaseTipRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(10, 132, 255, 0.06)',
-        paddingHorizontal: 18,
-        paddingVertical: 9,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(10, 132, 255, 0.14)',
-    },
-    showcaseTip: {
-        fontSize: 13,
-        color: theme.textSecondary,
-        fontWeight: '600',
-        marginLeft: 6,
-    },
-    showcaseScrollContent: {
-        alignItems: 'center',
-        paddingHorizontal: 40,
-        paddingVertical: 10,
-    },
-    desktopFooter: { width: '100%', alignItems: 'center', paddingHorizontal: 48, marginTop: 16 },
-    footerText: { fontSize: 13, color: theme.textMuted, fontWeight: '600' },
-
-    // ── Mobile ───────────────────────────────────────────────────────────────────
+    desktopContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background },
+    desktopHeader: { alignItems: 'center', marginBottom: 40, padding: 20, ...glassPanel(theme) },
+    desktopLogo: { width: 200, height: 70 },
+    showcaseTagline: { fontSize: 12, color: theme.textPrimary, letterSpacing: 2, opacity: 0.7 },
+    showcaseTipRow: { flexDirection: 'row', alignItems: 'center', marginTop: 15, padding: 10, ...glassButton(theme) },
+    showcaseTip: { fontSize: 12, color: theme.textPrimary, marginLeft: 8 },
+    showcaseScrollContent: { padding: 20 },
+    desktopFooter: { marginTop: 30 },
+    footerText: { color: theme.textMuted },
     mobileContainer: { flex: 1 },
     mobileSafeArea: { flex: 1 },
-    loadingContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 32,
-    },
-    loadingLogo: {
-        width: 220,
-        height: 84,
-        marginBottom: 16,
-    },
-    loadingText: {
-        color: theme.textPrimary,
-        fontSize: 16,
-        fontWeight: '700',
-    },
+    loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    loadingLogo: { width: 150, height: 150 },
+    loadingText: { color: theme.textPrimary, fontSize: 18, fontWeight: 'bold' },
     screenContainer: { flex: 1 },
     mobileModalContainer: {
         position: 'absolute',
         top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: theme.background,
+        backgroundColor: theme.glassOverlay,
         zIndex: 999,
     },
-
-    // ── Tab Bar ─────────────────────────────────────────────────────────────────
     tabBarWrapper: {
-        paddingHorizontal: 0,
-        paddingBottom: 0,
-        paddingTop: 0,
+        paddingHorizontal: 16,
+        paddingBottom: Platform.OS === 'ios' ? 24 : 12,
         backgroundColor: 'transparent',
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
     },
     tabBar: {
-        height: 96,
-        backgroundColor: theme.surface,
         flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingBottom: 18,
-        borderTopLeftRadius: 18,
-        borderTopRightRadius: 18,
-        shadowColor: theme.shadow,
-        shadowOffset: { width: 0, height: -6 },
-        shadowOpacity: 0.08,
-        shadowRadius: 16,
-        elevation: 12,
+        height: 64,
+        backgroundColor: theme.tabBarGlass,
+        borderRadius: 32,
         borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.04)',
+        borderColor: theme.glassBorderStrong,
+        paddingHorizontal: 8,
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        shadowColor: theme.glassShadow,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: theme.scheme === 'dark' ? 0.28 : 0.16,
+        shadowRadius: 32,
+        elevation: theme.glassElevation,
     },
     tabButton: {
         flex: 1,
@@ -378,54 +332,30 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    activeTabPill: {
-        width: 44,
-        height: 44,
-        borderRadius: 22, // Full radius circle
-        backgroundColor: theme.electricBlue,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: theme.electricBlue,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.35,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    activeTabLabel: {
-        fontSize: 12,
-        fontWeight: '700',
-        color: theme.purpleAccent,
-    },
     inactiveTabContent: {
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 3,
     },
     tabLabel: {
-        fontSize: 12,
+        fontSize: 10,
         fontWeight: '600',
         color: theme.tabInactive,
-        marginTop: 5,
+        marginTop: 4,
     },
-
-    // ── Floating Add ────────────────────────────────────────────────────────────
+    activeTabLabel: {
+        color: theme.electricBlue,
+        fontWeight: '700',
+    },
     floatingAddWrapper: {
         width: 64,
         alignItems: 'center',
         justifyContent: 'center',
-        // Lifts the button above the bar
         marginTop: -28,
     },
     floatingAdd: {
         width: 58,
         height: 58,
         borderRadius: 29,
-        shadowColor: '#FF6B00',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 14,
-        elevation: 10,
-        // White ring around button
         borderWidth: 3,
         borderColor: '#FFFFFF',
     },

@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { Modal, View, StyleSheet, Text, ScrollView, TouchableOpacity } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AppTheme, useApp } from '../AppContext';
 import { Task } from '../types';
+import { glassButton, glassPanel, glassSurface } from '../theme/glass';
 
 interface CalendarScheduleProps {
     onBack: () => void;
@@ -197,21 +199,27 @@ export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({ onAddTaskPre
 
     return (
         <View style={styles.container}>
+            <LinearGradient
+                colors={[theme.bgTop, theme.bgMid, theme.bgBottom]}
+                style={StyleSheet.absoluteFillObject}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+            />
             <View style={styles.header}>
                 <View style={styles.monthControls}>
                     <TouchableOpacity style={styles.weekButton} onPress={() => changeWeek(-1)} activeOpacity={0.8}>
-                        <Ionicons name="chevron-back" size={20} color={theme.icon} />
+                        <Ionicons name="chevron-back" size={20} color={theme.orangeAccent} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.monthButton} onPress={openDatePicker} activeOpacity={0.8}>
                         <Text style={styles.monthText}>{monthLabels[selectedDate.getMonth()]} {selectedDate.getFullYear()}</Text>
-                        <Ionicons name="chevron-down" size={18} color={theme.icon} />
+                        <Ionicons name="chevron-down" size={18} color={theme.orangeAccent} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.weekButton} onPress={() => changeWeek(1)} activeOpacity={0.8}>
-                        <Ionicons name="chevron-forward" size={20} color={theme.icon} />
+                        <Ionicons name="chevron-forward" size={20} color={theme.orangeAccent} />
                     </TouchableOpacity>
                 </View>
                 <TouchableOpacity style={styles.iconButton} onPress={() => openCreateForTime(9 * 60)} activeOpacity={0.8}>
-                    <Ionicons name="add-circle-outline" size={28} color={theme.icon} />
+                    <Ionicons name="add-circle-outline" size={28} color={theme.orangeAccent} />
                 </TouchableOpacity>
             </View>
 
@@ -285,7 +293,7 @@ export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({ onAddTaskPre
                             activeOpacity={0.78}
                             onPress={() => openCreateForTime(9 * 60)}
                         >
-                            <Ionicons name="calendar-clear-outline" size={34} color={theme.textMuted} />
+                            <Ionicons name="calendar-clear-outline" size={34} color={theme.orangeAccent} />
                             <Text style={styles.emptyTitle}>{t('noTasksScheduled')}</Text>
                             <Text style={styles.emptyText}>{formatTaskDate(selectedDate)}</Text>
                         </TouchableOpacity>
@@ -298,7 +306,7 @@ export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({ onAddTaskPre
                     <View style={styles.pickerCard} onStartShouldSetResponder={() => true}>
                         <View style={styles.pickerHeader}>
                             <TouchableOpacity style={styles.pickerArrow} onPress={() => setPickerYear(year => year - 1)}>
-                                <Ionicons name="chevron-back" size={22} color={theme.icon} />
+                                <Ionicons name="chevron-back" size={22} color={theme.orangeAccent} />
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.todayButton}
@@ -315,7 +323,7 @@ export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({ onAddTaskPre
                                 <Text style={styles.todayText}>{t('today')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.pickerArrow} onPress={() => setPickerYear(year => year + 1)}>
-                                <Ionicons name="chevron-forward" size={22} color={theme.icon} />
+                                <Ionicons name="chevron-forward" size={22} color={theme.orangeAccent} />
                             </TouchableOpacity>
                         </View>
 
@@ -381,7 +389,7 @@ export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({ onAddTaskPre
 const createStyles = (theme: AppTheme) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: theme.backgroundAlt,
+        backgroundColor: 'transparent',
         paddingTop: 58,
     },
     header: {
@@ -399,13 +407,16 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     monthButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 4,
+        paddingHorizontal: 12,
+        minHeight: 40,
+        ...glassButton(theme, false, { borderRadius: 20 }),
     },
     weekButton: {
         width: 30,
         height: 34,
         alignItems: 'center',
         justifyContent: 'center',
+        ...glassButton(theme, false, { borderRadius: 17 }),
     },
     monthText: {
         color: theme.text,
@@ -419,6 +430,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginLeft: 10,
+        ...glassButton(theme, false, { borderRadius: 21 }),
     },
     daysRow: {
         flexDirection: 'row',
@@ -430,17 +442,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     dayPill: {
         width: 48,
         minHeight: 68,
-        borderRadius: 24,
         alignItems: 'center',
         justifyContent: 'center',
+        ...glassButton(theme, false, { borderRadius: 24 }),
     },
     activeDayPill: {
-        backgroundColor: theme.purpleAccent,
-        shadowColor: theme.purpleAccent,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.25,
-        shadowRadius: 16,
-        elevation: 6,
+        backgroundColor: theme.electricBlue,
     },
     dayLabel: {
         color: theme.textSecondary,
@@ -481,14 +488,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         marginTop: 6,
     },
     firstHourRule: {
-        backgroundColor: theme.purpleAccent,
+        backgroundColor: theme.electricBlue,
     },
     currentTimeLine: {
         position: 'absolute',
         left: 78,
         right: 22,
         height: 1.5,
-        backgroundColor: theme.purpleAccent,
+        backgroundColor: theme.electricBlue,
         zIndex: 3,
     },
     currentDot: {
@@ -498,7 +505,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: theme.purpleAccent,
+        backgroundColor: theme.electricBlue,
     },
     eventRow: {
         position: 'absolute',
@@ -521,6 +528,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         justifyContent: 'center',
         paddingHorizontal: 22,
         paddingVertical: 10,
+        borderWidth: 1,
+        borderColor: theme.glassBorder,
     },
     eventTitle: {
         fontSize: 16,
@@ -539,7 +548,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         top: 120,
         minHeight: 140,
         borderRadius: 16,
-        backgroundColor: theme.surfaceMuted,
+        ...glassSurface(theme, 'muted', { borderRadius: 18 }),
         alignItems: 'center',
         justifyContent: 'center',
         padding: 18,
@@ -558,7 +567,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.32)',
+        backgroundColor: theme.glassOverlay,
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 22,
@@ -566,14 +575,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     pickerCard: {
         width: '100%',
         maxWidth: 420,
-        backgroundColor: theme.surface,
-        borderRadius: 18,
+        ...glassPanel(theme),
         padding: 20,
-        shadowColor: theme.shadow,
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.12,
-        shadowRadius: 24,
-        elevation: 8,
     },
     pickerHeader: {
         flexDirection: 'row',
@@ -584,10 +587,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     pickerArrow: {
         width: 40,
         height: 40,
-        borderRadius: 20,
-        backgroundColor: theme.surfaceAlt,
         alignItems: 'center',
         justifyContent: 'center',
+        ...glassButton(theme, false, { borderRadius: 20 }),
     },
     todayButton: {
         alignItems: 'center',
@@ -600,7 +602,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         fontWeight: '800',
     },
     todayText: {
-        color: theme.purpleAccent,
+        color: theme.electricBlue,
         fontSize: 12,
         fontWeight: '700',
         marginTop: 3,
@@ -614,7 +616,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         minWidth: 66,
         height: 36,
         borderRadius: 18,
-        backgroundColor: theme.surfaceAlt,
+        ...glassButton(theme, false, { borderRadius: 18 }),
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 8,
@@ -634,7 +636,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         width: '23%',
         height: 36,
         borderRadius: 18,
-        backgroundColor: theme.surfaceAlt,
+        ...glassButton(theme, false, { borderRadius: 18 }),
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 8,
@@ -645,7 +647,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         fontWeight: '700',
     },
     activePickerPill: {
-        backgroundColor: theme.purpleAccent,
+        backgroundColor: theme.electricBlue,
     },
     activePickerText: {
         color: theme.textInverted,
@@ -673,7 +675,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         justifyContent: 'center',
     },
     activeDayCell: {
-        backgroundColor: theme.purpleAccent,
+        backgroundColor: theme.electricBlue,
     },
     dayCellText: {
         color: theme.text,

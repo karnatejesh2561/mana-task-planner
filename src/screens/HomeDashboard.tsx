@@ -1,17 +1,20 @@
 import React from 'react';
 import { Alert, Image, View, StyleSheet, Text, ScrollView, TouchableOpacity } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AppTheme, useApp } from '../AppContext';
 import { Task } from '../types';
+import { glassButton, glassSurface, glowShadow } from '../theme/glass';
 
 interface HomeDashboardProps {
     onNavigate: (screen: string) => void;
     onAddTaskPress: () => void;
     onTaskPress?: (task: Task) => void;
+    onBellPress?: () => void;
 }
 
-export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onAddTaskPress, onTaskPress }) => {
-    const { tasks, user, deleteTask, theme, t } = useApp();
+export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onAddTaskPress, onTaskPress, onBellPress }) => {
+    const { tasks, user, deleteTask, theme, t, notificationBellCount, refreshNotificationBellCount } = useApp();
     const styles = React.useMemo(() => createStyles(theme), [theme]);
     const taskDecor = React.useMemo(() => [
         { color: '#6D5DF6', bg: theme.scheme === 'dark' ? 'rgba(109,93,246,0.18)' : '#F0ECFF', icon: 'calendar-outline' },
@@ -22,6 +25,22 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onAddTaskPress, on
     ], [theme.scheme]);
     const listTasks = tasks.filter(task => !task.id.startsWith('c-')).slice(0, 5);
     const firstName = user?.name?.split(' ')[0] || 'Hemanth';
+
+    React.useEffect(() => {
+        void refreshNotificationBellCount();
+        // refresh when task list changes
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tasks.length]);
+
+    React.useEffect(() => {
+        const timer = setInterval(() => {
+            void refreshNotificationBellCount();
+        }, 30000);
+
+        return () => clearInterval(timer);
+        // keep bell count fresh while home screen is open
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleDeleteTask = (task: Task) => {
         Alert.alert(
@@ -42,6 +61,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onAddTaskPress, on
 
     return (
         <View style={styles.container}>
+            <LinearGradient
+                colors={[theme.bgTop, theme.bgMid, theme.bgBottom]}
+                style={StyleSheet.absoluteFillObject}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+            />
             <View style={styles.header}>
                 <View style={styles.greetingRow}>
                     <Image
@@ -50,8 +75,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onAddTaskPress, on
                     />
                     <Text style={styles.greeting}>{t('homeGreeting', { name: firstName })}</Text>
                 </View>
-                <TouchableOpacity style={styles.iconButton} activeOpacity={0.8}>
-                    <Ionicons name="notifications-outline" size={24} color={theme.icon} />
+                <TouchableOpacity style={styles.iconButton} activeOpacity={0.8} onPress={onBellPress}>
+                    <Ionicons name="notifications-outline" size={24} color={theme.orangeAccent} />
+                    {notificationBellCount > 0 && (
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>{notificationBellCount > 9 ? '9+' : `${notificationBellCount}`}</Text>
+                        </View>
+                    )}
                 </TouchableOpacity>
             </View>
 
@@ -77,13 +107,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onAddTaskPress, on
                             onPress={() => onTaskPress?.(task)}
                         >
                             <View style={[styles.leadingIcon, { backgroundColor: decor.bg }]}>
-                                <Ionicons name={decor.icon as any} size={22} color={decor.color} />
+                                <Ionicons name={decor.icon as any} size={22} color={theme.orangeAccent} />
                             </View>
 
                             <View style={styles.taskCopy}>
                                 <Text style={styles.taskTitle} numberOfLines={1}>{task.title}</Text>
                                 <View style={styles.dueRow}>
-                                    <Ionicons name="time-outline" size={14} color={theme.textSecondary} />
+                                    <Ionicons name="time-outline" size={14} color={theme.orangeAccent} />
                                     <Text style={styles.dueText} numberOfLines={1}>{t('dueTodayAt', { time: task.dueTime })}</Text>
                                 </View>
                             </View>
@@ -119,7 +149,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onAddTaskPress, on
 const createStyles = (theme: AppTheme) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: theme.background,
+        backgroundColor: 'transparent',
         paddingTop: 58,
     },
     header: {
@@ -152,6 +182,25 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         height: 42,
         alignItems: 'center',
         justifyContent: 'center',
+        position: 'relative',
+        ...glassButton(theme, false, { borderRadius: 21 }),
+    },
+    badge: {
+        position: 'absolute',
+        top: 3,
+        right: 2,
+        minWidth: 17,
+        height: 17,
+        borderRadius: 9,
+        paddingHorizontal: 4,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#EF4444',
+    },
+    badgeText: {
+        color: '#FFFFFF',
+        fontSize: 10,
+        fontWeight: '700',
     },
     titleRow: {
         flexDirection: 'row',
@@ -177,18 +226,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         paddingBottom: 118,
     },
     taskCard: {
-        minHeight: 92,
-        backgroundColor: theme.surface,
-        borderRadius: 16,
-        marginBottom: 14,
-        paddingHorizontal: 20,
+        minHeight: 80,
+        ...glassSurface(theme, 'regular', { borderRadius: 18 }),
+        marginBottom: 10,
+        paddingHorizontal: 14,
         flexDirection: 'row',
         alignItems: 'center',
-        shadowColor: theme.shadow,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: theme.cardShadowOpacity,
-        shadowRadius: 22,
-        elevation: 3,
     },
     leadingIcon: {
         width: 42,
@@ -197,6 +240,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 16,
+        borderWidth: 1,
+        borderColor: theme.glassBorder,
     },
     taskCopy: {
         flex: 1,
@@ -206,7 +251,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         color: theme.text,
         fontSize: 17,
         fontWeight: '800',
-        marginBottom: 12,
+        marginBottom: 4,
     },
     dueRow: {
         flexDirection: 'row',
@@ -221,7 +266,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     actionGroup: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginLeft: 12,
+        marginLeft: 10,
     },
     trailingIcon: {
         width: 35,
@@ -230,6 +275,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginLeft: 8,
+        borderWidth: 1,
+        borderColor: theme.glassBorder,
     },
     deleteIcon: {
         backgroundColor: theme.dangerBg,
@@ -238,16 +285,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         position: 'absolute',
         right: 24,
         bottom: 112,
-        width: 70,
-        height: 70,
-        borderRadius: 35,
-        backgroundColor: '#5851E8',
+        width: 65,
+        height: 65,
+        borderRadius: 32.5,
+        backgroundColor: theme.orangeAccent,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#5851E8',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.35,
-        shadowRadius: 20,
-        elevation: 10,
+        ...glowShadow(theme, theme.orangeAccent, 0.35),
     },
 });

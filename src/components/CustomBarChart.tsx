@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, StyleSheet, Text, Dimensions } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import { AppTheme, useApp } from '../AppContext';
+import { glassPanel } from '../theme/glass';
 
 interface BarDataItem {
   day: string;
@@ -22,6 +24,9 @@ const defaultBarData: BarDataItem[] = [
 ];
 
 export const CustomBarChart: React.FC<CustomBarChartProps> = ({ data = defaultBarData }) => {
+  const { theme } = useApp();
+  const styles = React.useMemo(() => createStyles(theme), [theme]);
+
   return (
     <View style={styles.card}>
       <View style={styles.chartContainer}>
@@ -47,16 +52,10 @@ export const CustomBarChart: React.FC<CustomBarChartProps> = ({ data = defaultBa
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 30,
+    ...glassPanel(theme, { borderRadius: 20 }),
     padding: 24,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.04,
-    shadowRadius: 20,
-    elevation: 3,
   },
   chartContainer: {
     height: 160,
@@ -72,7 +71,7 @@ const styles = StyleSheet.create({
   barTrack: {
     width: 14,
     height: 120,
-    backgroundColor: '#F3F0FA',
+    backgroundColor: theme.glassBgMuted,
     borderRadius: 8,
     overflow: 'hidden',
     justifyContent: 'flex-end',
@@ -90,6 +89,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 12,
     fontWeight: '600',
-    color: '#999999',
+    color: theme.textSecondary,
   },
 });
