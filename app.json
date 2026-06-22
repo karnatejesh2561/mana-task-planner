@@ -1,39 +1,5 @@
 {
-  "expo": {
-    "name": "Mana Task Planner",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/logo.png",
-    "userInterfaceStyle": "automatic",
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "userInterfaceStyle": "automatic",
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/logo.png"
-      },
-      "predictiveBackGestureEnabled": false
-    },
-    "web": {
-      "favicon": "./assets/logo.png"
-    },
-    "plugins": [
-      "expo-system-ui",
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Mana Task Planner uses your photos to update your profile picture."
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "color": "#6D4AFF",
-          "defaultChannel": "tasks"
-        }
-      ]
-    ]
-  }
+  "name": "ManaTaskPlanner",
+  "displayName": "ManaTaskPlanner",
+  "assetBundlePatterns": ["**/*"]
 }
