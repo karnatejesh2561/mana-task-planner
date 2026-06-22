@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import { useApp } from '../AppContext';
+import { glassSurface } from '../theme/glass';
 
 interface BadgeProps {
   label: string;
@@ -19,6 +21,9 @@ export const Badge: React.FC<BadgeProps> = ({
   gradientColors,
   icon,
 }) => {
+  const { theme } = useApp();
+  const styles = React.useMemo(() => createStyles(theme), [theme]);
+
   // Priority styles
   if (type === 'priority') {
     let color = '#22C55E'; // Low default
@@ -91,12 +96,11 @@ export const Badge: React.FC<BadgeProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ReturnType<typeof useApp>['theme']) => StyleSheet.create({
   priorityBadge: {
+    ...glassSurface(theme, 'muted', { borderRadius: 20 }),
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 20,
-    borderWidth: 1.2,
     alignSelf: 'flex-start',
   },
   priorityText: {
@@ -105,9 +109,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   statusBadge: {
+    ...glassSurface(theme, 'muted', { borderRadius: 12 }),
     paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 12,
     alignSelf: 'flex-start',
   },
   statusText: {
@@ -132,10 +136,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   tagBadge: {
+    ...glassSurface(theme, 'muted', { borderRadius: 999 }),
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1.5,
     borderColor: 'rgba(139, 92, 246, 0.25)', // logo purple transparent
     backgroundColor: 'rgba(139, 92, 246, 0.03)',
     marginRight: 8,

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Text, Dimensions, Platform } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AppTheme, useApp } from '../AppContext';
+import { glassPanel } from '../theme/glass';
 
 interface IPhone16FrameProps {
   children: React.ReactNode;
@@ -65,19 +66,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginVertical: 24,
   },
   titleBadge: {
-    backgroundColor: theme.scheme === 'dark' ? '#182235' : '#0B1F4D',
+    ...glassPanel(theme, { borderRadius: 20 }),
     paddingHorizontal: 16,
     paddingVertical: 6,
-    borderRadius: 20,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
   },
   titleBadgeText: {
-    color: theme.textInverted,
+    color: theme.text,
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: 0.5,

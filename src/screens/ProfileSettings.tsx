@@ -14,13 +14,16 @@ import * as ImagePicker from 'react-native-image-picker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AppTheme, useApp } from '../AppContext';
 import { LANGUAGE_LABELS } from '../i18n';
+import { NotificationSettings } from './NotificationSettings';
+import { DefaultReminder } from './DefaultReminder';
+import { glassButton, glassInput, glassPanel, glassSurface, glowShadow } from '../theme/glass';
 
 interface ProfileSettingsProps {
     onNavigate: (screen: string) => void;
     onLogout?: () => void;
 }
 
-type ProfileMode = 'settings' | 'details' | 'edit';
+type ProfileMode = 'settings' | 'details' | 'edit' | 'notifications' | 'defaultReminder';
 
 const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=240&h=240&fit=crop&q=90';
 const MAX_ABOUT = 120;
@@ -29,6 +32,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onLogout }) =>
     const { user, theme, colorScheme, toggleTheme, language, toggleLanguage, updateProfile, t } = useApp();
     const styles = useMemo(() => createStyles(theme), [theme]);
     const [mode, setMode] = useState<ProfileMode>('settings');
+    const [reminderSource, setReminderSource] = useState<'settings' | 'notifications'>('settings');
     const [name, setName] = useState(user?.name || 'Hemanth');
     const [email, setEmail] = useState(user?.email || 'hemanth@example.com');
     const [password, setPassword] = useState('');
@@ -65,12 +69,38 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onLogout }) =>
         setMode('details');
     };
 
+    if (mode === 'notifications') {
+        return (
+            <NotificationSettings
+                onBack={() => setMode('settings')}
+                onNavigateToDefaultReminder={() => {
+                    setReminderSource('notifications');
+                    setMode('defaultReminder');
+                }}
+            />
+        );
+    }
+
+    if (mode === 'defaultReminder') {
+        return (
+            <DefaultReminder
+                onBack={() => setMode(reminderSource)}
+            />
+        );
+    }
+
     if (mode === 'edit') {
         return (
             <View style={styles.screen}>
+                <LinearGradient
+                    colors={[theme.bgTop, theme.bgMid, theme.bgBottom]}
+                    style={StyleSheet.absoluteFillObject}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                />
                 <View style={styles.editHeader}>
                     <TouchableOpacity style={styles.headerIconButton} onPress={() => setMode('details')} activeOpacity={0.82}>
-                        <Ionicons name="chevron-back" size={24} color={theme.icon} />
+                        <Ionicons name="chevron-back" size={24} color={theme.orangeAccent} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{t('editProfile')}</Text>
                     <TouchableOpacity style={styles.saveTopButton} onPress={() => void saveProfile()} activeOpacity={0.82}>
@@ -82,7 +112,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onLogout }) =>
                     <TouchableOpacity style={styles.editAvatarWrap} onPress={pickImage} activeOpacity={0.85}>
                         <Image source={{ uri: photoUri }} style={styles.editAvatar} />
                         <View style={styles.cameraBadge}>
-                            <Ionicons name="camera-outline" size={22} color={theme.purpleAccent} />
+                            <Ionicons name="camera-outline" size={22} color={theme.orangeAccent} />
                         </View>
                     </TouchableOpacity>
 
@@ -107,7 +137,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onLogout }) =>
                     </View>
 
                     <TouchableOpacity style={styles.primaryButton} onPress={() => void saveProfile()} activeOpacity={0.88}>
-                        <LinearGradient colors={[theme.purpleAccent, theme.brightBlue]} style={styles.primaryGradient}>
+                        <LinearGradient colors={[theme.electricBlue, theme.brightBlue]} style={styles.primaryGradient}>
                             <Text style={styles.primaryText}>{t('saveChanges')}</Text>
                         </LinearGradient>
                     </TouchableOpacity>
@@ -118,88 +148,104 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onLogout }) =>
 
     if (mode === 'details') {
         return (
-            <ScrollView style={styles.screen} showsVerticalScrollIndicator={false} contentContainerStyle={styles.detailContent}>
-                <View style={styles.detailTopBar}>
-                    <TouchableOpacity style={styles.headerIconButton} onPress={() => setMode('settings')} activeOpacity={0.82}>
-                        <Ionicons name="chevron-back" size={24} color={theme.icon} />
+            <View style={styles.screen}>
+                <LinearGradient
+                    colors={[theme.bgTop, theme.bgMid, theme.bgBottom]}
+                    style={StyleSheet.absoluteFillObject}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                />
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.detailContent}>
+                    <View style={styles.detailTopBar}>
+                        <TouchableOpacity style={styles.headerIconButton} onPress={() => setMode('settings')} activeOpacity={0.82}>
+                            <Ionicons name="chevron-back" size={24} color={theme.orangeAccent} />
+                        </TouchableOpacity>
+
+                    </View>
+
+                    <View style={styles.detailHero}>
+                        <View>
+                            <Image source={{ uri: photoUri }} style={styles.detailAvatar} />
+                            <View style={styles.onlineDot} />
+                        </View>
+                        <Text style={styles.detailName}>{name}</Text>
+                        <Text style={styles.detailEmail}>{email}</Text>
+                        <View style={styles.joinedRow}>
+                            <Ionicons name="calendar-outline" size={14} color={theme.orangeAccent} />
+                            <Text style={styles.joinedText}>{t('joined', { date: user?.joinedAt || 'May 2024' })}</Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.infoStack}>
+                        <InfoCard icon="person-outline" title={t('aboutYou')} value={about} styles={styles} theme={theme} />
+                        <InfoCard icon="mail-outline" title={t('email')} value={email} styles={styles} theme={theme} />
+                        <InfoCard icon="lock-closed-outline" title={t('password')} value="********" styles={styles} theme={theme} />
+                    </View>
+
+                    <TouchableOpacity style={styles.primaryButton} onPress={() => setMode('edit')} activeOpacity={0.88}>
+                        <LinearGradient colors={[theme.electricBlue, theme.brightBlue]} style={styles.primaryGradient}>
+                            <Ionicons name="pencil-outline" size={21} color={theme.textInverted} />
+                            <Text style={styles.primaryText}>{t('editProfile')}</Text>
+                        </LinearGradient>
                     </TouchableOpacity>
-
-                </View>
-
-                <View style={styles.detailHero}>
-                    <View>
-                        <Image source={{ uri: photoUri }} style={styles.detailAvatar} />
-                        <View style={styles.onlineDot} />
-                    </View>
-                    <Text style={styles.detailName}>{name}</Text>
-                    <Text style={styles.detailEmail}>{email}</Text>
-                    <View style={styles.joinedRow}>
-                        <Ionicons name="calendar-outline" size={14} color={theme.textSecondary} />
-                        <Text style={styles.joinedText}>{t('joined', { date: user?.joinedAt || 'May 2024' })}</Text>
-                    </View>
-                </View>
-
-                <View style={styles.infoStack}>
-                    <InfoCard icon="person-outline" title={t('aboutYou')} value={about} styles={styles} theme={theme} />
-                    <InfoCard icon="mail-outline" title={t('email')} value={email} styles={styles} theme={theme} />
-                    <InfoCard icon="lock-closed-outline" title={t('password')} value="********" styles={styles} theme={theme} />
-                </View>
-
-                <TouchableOpacity style={styles.primaryButton} onPress={() => setMode('edit')} activeOpacity={0.88}>
-                    <LinearGradient colors={[theme.purpleAccent, theme.brightBlue]} style={styles.primaryGradient}>
-                        <Ionicons name="pencil-outline" size={21} color={theme.textInverted} />
-                        <Text style={styles.primaryText}>{t('editProfile')}</Text>
-                    </LinearGradient>
-                </TouchableOpacity>
-            </ScrollView>
+                </ScrollView>
+            </View>
         );
     }
 
     return (
-        <ScrollView style={styles.screen} showsVerticalScrollIndicator={false} contentContainerStyle={styles.settingsContent}>
-            <Text style={styles.title}>{t('profile')}</Text>
+        <View style={styles.screen}>
+            <LinearGradient
+                colors={[theme.bgTop, theme.bgMid, theme.bgBottom]}
+                style={StyleSheet.absoluteFillObject}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+            />
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.settingsContent}>
+                <Text style={styles.title}>{t('profile')}</Text>
 
-            <TouchableOpacity style={styles.profileCard} activeOpacity={0.85} onPress={() => setMode('details')}>
-                <Image source={{ uri: photoUri }} style={styles.profileAvatar} />
-                <View style={styles.profileCopy}>
-                    <Text style={styles.profileName}>{name}</Text>
-                    <Text style={styles.profileEmail}>{email}</Text>
+                <TouchableOpacity style={styles.profileCard} activeOpacity={0.85} onPress={() => setMode('details')}>
+                    <Image source={{ uri: photoUri }} style={styles.profileAvatar} />
+                    <View style={styles.profileCopy}>
+                        <Text style={styles.profileName}>{name}</Text>
+                        <Text style={styles.profileEmail} numberOfLines={1}>{email}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={theme.orangeAccent} />
+                </TouchableOpacity>
+
+                <Text style={styles.groupLabel}>{t('account')}</Text>
+                <View style={styles.groupCard}>
+                    <SettingRow icon="person-outline" title={t('profile')} onPress={() => setMode('details')} styles={styles} theme={theme} />
+                    <SettingRow icon="notifications-outline" title={t('notifications')} onPress={() => setMode('notifications')} styles={styles} theme={theme} />
+                    <SettingRow icon="time-outline" title={t('defaultReminder')} onPress={() => { setReminderSource('settings'); setMode('defaultReminder'); }} styles={styles} theme={theme} />
+                    <SettingRow icon="moon-outline" title={t('appearance')} value={colorScheme === 'dark' ? t('dark') : t('light')} onPress={toggleTheme} styles={styles} theme={theme} />
+                    <SettingRow
+                        icon="globe-outline"
+                        title={t('language')}
+                        value={LANGUAGE_LABELS[language]}
+                        onPress={() => {
+                            const nextLanguage = language === 'en' ? 'te' : 'en';
+                            toggleLanguage();
+                            Alert.alert(t('languageChangedTitle'), t('languageChangedMessage', { language: LANGUAGE_LABELS[nextLanguage] }));
+                        }}
+                        styles={styles}
+                        theme={theme}
+                        isLast
+                    />
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
-            </TouchableOpacity>
 
-            <Text style={styles.groupLabel}>{t('account')}</Text>
-            <View style={styles.groupCard}>
-                <SettingRow icon="person-outline" title={t('profile')} onPress={() => setMode('details')} styles={styles} theme={theme} />
-                <SettingRow icon="notifications-outline" title={t('notifications')} onPress={() => Alert.alert(t('notifications'), t('notificationSettingsSoon'))} styles={styles} theme={theme} />
-                <SettingRow icon="time-outline" title={t('defaultReminder')} onPress={() => Alert.alert(t('defaultReminder'), t('reminderSettingsSoon'))} styles={styles} theme={theme} />
-                <SettingRow icon="moon-outline" title={t('appearance')} value={colorScheme === 'dark' ? t('dark') : t('light')} onPress={toggleTheme} styles={styles} theme={theme} />
-                <SettingRow
-                    icon="globe-outline"
-                    title={t('language')}
-                    value={LANGUAGE_LABELS[language]}
-                    onPress={() => {
-                        const nextLanguage = language === 'en' ? 'te' : 'en';
-                        toggleLanguage();
-                        Alert.alert(t('languageChangedTitle'), t('languageChangedMessage', { language: LANGUAGE_LABELS[nextLanguage] }));
-                    }}
-                    styles={styles}
-                    theme={theme}
-                    isLast
-                />
-            </View>
+                <Text style={styles.groupLabel}>{t('others')}</Text>
+                <View style={styles.groupCard}>
+                    <SettingRow icon="shield-checkmark-outline" title={t('privacyPolicy')} onPress={() => Alert.alert(t('privacyPolicy'), t('privacyDetailsSoon'))} styles={styles} theme={theme} />
+                    <SettingRow icon="information-circle-outline" title={t('aboutManaTask')} onPress={() => Alert.alert(t('aboutManaTask'), t('manaTaskVersion'))} styles={styles} theme={theme} isLast />
+                </View>
 
-            <Text style={styles.groupLabel}>{t('others')}</Text>
-            <View style={styles.groupCard}>
-                <SettingRow icon="shield-checkmark-outline" title={t('privacyPolicy')} onPress={() => Alert.alert(t('privacyPolicy'), t('privacyDetailsSoon'))} styles={styles} theme={theme} />
-                <SettingRow icon="information-circle-outline" title={t('aboutManaTask')} onPress={() => Alert.alert(t('aboutManaTask'), t('manaTaskVersion'))} styles={styles} theme={theme} isLast />
-            </View>
-
-            <TouchableOpacity style={styles.logoutCard} activeOpacity={0.85} onPress={onLogout}>
-                <Ionicons name="log-out-outline" size={23} color={theme.error} />
-                <Text style={styles.logoutText}>{t('logout')}</Text>
-            </TouchableOpacity>
-        </ScrollView>
+                <TouchableOpacity style={styles.logoutCard} activeOpacity={0.85} onPress={onLogout}>
+                    <Ionicons name="log-out-outline" size={23} color={theme.error} />
+                    <Text style={styles.logoutText}>{t('logout')}</Text>
+                </TouchableOpacity>
+            </ScrollView>
+        </View>
     );
 };
 
@@ -222,12 +268,12 @@ const SettingRow = ({
 }) => (
     <TouchableOpacity style={[styles.settingRow, !isLast && styles.settingDivider]} onPress={onPress} activeOpacity={0.85}>
         <View style={styles.settingLeft}>
-            <Ionicons name={icon} size={22} color={theme.purpleAccent} />
+            <Ionicons name={icon} size={22} color={theme.orangeAccent} />
             <Text style={styles.settingTitle}>{title}</Text>
         </View>
         <View style={styles.settingRight}>
             {value && <Text style={styles.settingValue}>{value}</Text>}
-            <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+            <Ionicons name="chevron-forward" size={18} color={theme.orangeAccent} />
         </View>
     </TouchableOpacity>
 );
@@ -247,7 +293,7 @@ const InfoCard = ({
 }) => (
     <View style={styles.infoCard}>
         <View style={styles.infoIconBox}>
-            <Ionicons name={icon} size={25} color={theme.purpleAccent} />
+            <Ionicons name={icon} size={25} color={theme.orangeAccent} />
         </View>
         <View style={styles.infoCopy}>
             <Text style={styles.infoTitle}>{title}</Text>
@@ -280,7 +326,7 @@ const ProfileField = ({
     <View style={styles.fieldBlock}>
         <Text style={styles.fieldLabel}>{label}</Text>
         <View style={styles.inputRow}>
-            <Ionicons name={icon} size={23} color={theme.purpleAccent} />
+            <Ionicons name={icon} size={23} color={theme.orangeAccent} />
             <TextInput
                 style={styles.input}
                 value={value}
@@ -291,7 +337,7 @@ const ProfileField = ({
                 keyboardType={keyboardType}
                 autoCapitalize={keyboardType === 'email-address' ? 'none' : 'words'}
             />
-            {trailing && <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />}
+            {trailing && <Ionicons name="chevron-forward" size={20} color={theme.orangeAccent} />}
         </View>
     </View>
 );
@@ -299,7 +345,7 @@ const ProfileField = ({
 const createStyles = (theme: AppTheme) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: theme.background,
+        backgroundColor: 'transparent',
     },
     settingsContent: {
         paddingTop: 62,
@@ -314,14 +360,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     },
     profileCard: {
         minHeight: 116,
-        backgroundColor: theme.surface,
-        borderRadius: 12,
+        ...glassPanel(theme, { borderRadius: 18 }),
         paddingHorizontal: 16,
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 24,
-        shadowRadius: 18,
-        elevation: 3,
     },
     profileAvatar: {
         width: 65,
@@ -353,15 +396,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         marginTop: 8,
     },
     groupCard: {
-        backgroundColor: theme.surface,
-        borderRadius: 12,
+        ...glassPanel(theme, { borderRadius: 18 }),
         overflow: 'hidden',
         marginBottom: 20,
-        shadowColor: theme.shadow,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: theme.cardShadowOpacity,
-        shadowRadius: 18,
-        elevation: 3,
     },
     settingRow: {
         minHeight: 56,
@@ -399,8 +436,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     },
     logoutCard: {
         minHeight: 56,
-        backgroundColor: theme.scheme === 'dark' ? 'rgba(239,68,68,0.12)' : '#FFF0F0',
-        borderRadius: 12,
+        ...glassSurface(theme, 'regular', { borderRadius: 18, backgroundColor: theme.dangerBg, borderColor: theme.errorBorder }),
         paddingHorizontal: 18,
         flexDirection: 'row',
         alignItems: 'center',
@@ -427,6 +463,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         height: 42,
         alignItems: 'center',
         justifyContent: 'center',
+        ...glassButton(theme, false, { borderRadius: 21 }),
     },
     detailHero: {
         alignItems: 'center',
@@ -478,25 +515,18 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     },
     infoCard: {
         minHeight: 78,
-        backgroundColor: theme.surface,
-        borderRadius: 12,
+        ...glassSurface(theme, 'regular', { borderRadius: 18 }),
         paddingHorizontal: 16,
         flexDirection: 'row',
         alignItems: 'center',
-        shadowColor: theme.shadow,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: theme.cardShadowOpacity,
-        shadowRadius: 18,
-        elevation: 3,
     },
     infoIconBox: {
         width: 46,
         height: 46,
-        borderRadius: 12,
-        backgroundColor: theme.scheme === 'dark' ? 'rgba(109,74,255,0.16)' : '#F1ECFF',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 14,
+        ...glassButton(theme, false, { borderRadius: 14, backgroundColor: theme.avatarBg }),
     },
     infoCopy: {
         flex: 1,
@@ -515,13 +545,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         lineHeight: 18,
     },
     primaryButton: {
-        borderRadius: 10,
+        borderRadius: 18,
         overflow: 'hidden',
-        shadowColor: theme.purpleAccent,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.25,
-        shadowRadius: 18,
-        elevation: 6,
+        ...glowShadow(theme, theme.electricBlue, 0.28),
     },
     primaryGradient: {
         height: 56,
@@ -542,6 +568,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        backgroundColor: theme.glassBgMuted,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.glassBorder,
     },
     headerTitle: {
         color: theme.text,
@@ -555,7 +584,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         justifyContent: 'center',
     },
     saveTopText: {
-        color: theme.purpleAccent,
+        color: theme.electricBlue,
         fontSize: 15,
         fontWeight: '800',
     },
@@ -580,15 +609,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         bottom: 10,
         width: 42,
         height: 42,
-        borderRadius: 21,
-        backgroundColor: theme.surface,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: theme.shadow,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: theme.cardShadowOpacity,
-        shadowRadius: 12,
-        elevation: 4,
+        ...glassButton(theme, false, { borderRadius: 21 }),
     },
     fieldBlock: {
         marginBottom: 20,
@@ -601,10 +624,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     },
     inputRow: {
         minHeight: 56,
-        borderRadius: 10,
-        backgroundColor: theme.input,
-        borderWidth: 1,
-        borderColor: theme.divider,
+        ...glassInput(theme, false, { borderRadius: 16 }),
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 16,
@@ -619,10 +639,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     },
     aboutBox: {
         minHeight: 112,
-        borderRadius: 10,
-        backgroundColor: theme.input,
-        borderWidth: 1,
-        borderColor: theme.divider,
+        ...glassInput(theme, false, { borderRadius: 16 }),
         paddingHorizontal: 16,
         paddingTop: 14,
         paddingBottom: 28,

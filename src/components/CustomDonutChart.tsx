@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
+import { AppTheme, useApp } from '../AppContext';
 
 interface DonutItem {
   name: string;
@@ -19,6 +20,8 @@ export const CustomDonutChart: React.FC<CustomDonutChartProps> = ({
   size = 180,
   strokeWidth = 24,
 }) => {
+  const { theme } = useApp();
+  const styles = React.useMemo(() => createStyles(theme), [theme]);
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   
@@ -35,7 +38,7 @@ export const CustomDonutChart: React.FC<CustomDonutChartProps> = ({
               cx={size / 2}
               cy={size / 2}
               r={radius}
-              stroke="#F0EDF6"
+              stroke={theme.glassBgMuted}
               strokeWidth={strokeWidth - 2}
               fill="transparent"
             />
@@ -83,7 +86,7 @@ export const CustomDonutChart: React.FC<CustomDonutChartProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     alignItems: 'center',
     paddingVertical: 10,
@@ -102,11 +105,11 @@ const styles = StyleSheet.create({
   centerPercentage: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#111111',
+    color: theme.text,
   },
   centerLabel: {
     fontSize: 12,
-    color: '#666666',
+    color: theme.textSecondary,
     fontWeight: '500',
     marginTop: 2,
   },
@@ -131,13 +134,13 @@ const styles = StyleSheet.create({
   },
   legendLabel: {
     fontSize: 13,
-    color: '#666666',
+    color: theme.textSecondary,
     marginRight: 4,
     fontWeight: '500',
   },
   legendValue: {
     fontSize: 13,
-    color: '#111111',
+    color: theme.text,
     fontWeight: '600',
   },
 });

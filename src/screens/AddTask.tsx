@@ -12,9 +12,11 @@ import {
   Platform,
 } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
+import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AppTheme, useApp } from '../AppContext';
 import { Task } from '../types';
+import { glassButton, glassHeader, glassInput, glassPanel, glowShadow } from '../theme/glass';
 
 interface AddTaskProps {
   onClose: () => void;
@@ -44,6 +46,32 @@ const TIME_OPTIONS = [
   '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM',
   '04:00 PM', '05:30 PM', '07:00 PM', '09:30 PM',
 ];
+
+const formatToDisplayTime = (input: string) => {
+  const value = input.trim().toUpperCase();
+  const twelveHourMatch = value.match(/^(\d{1,2}):(\d{1,2})\s*(AM|PM)$/i);
+  if (twelveHourMatch) {
+    const hour = Number(twelveHourMatch[1]);
+    const minute = Number(twelveHourMatch[2]);
+    const period = twelveHourMatch[3].toUpperCase();
+    if (hour < 1 || hour > 12 || minute < 0 || minute > 59) return null;
+    return `${`${hour}`.padStart(2, '0')}:${`${minute}`.padStart(2, '0')} ${period}`;
+  }
+
+  const twentyFourHourMatch = value.match(/^(\d{1,2}):(\d{1,2})$/);
+  if (twentyFourHourMatch) {
+    const hour24 = Number(twentyFourHourMatch[1]);
+    const minute = Number(twentyFourHourMatch[2]);
+    if (hour24 < 0 || hour24 > 23 || minute < 0 || minute > 59) return null;
+    const period = hour24 >= 12 ? 'PM' : 'AM';
+    const hour12 = hour24 % 12 || 12;
+    return `${`${hour12}`.padStart(2, '0')}:${`${minute}`.padStart(2, '0')} ${period}`;
+  }
+
+  return null;
+};
+
+const isValidDisplayTime = (value: string) => Boolean(formatToDisplayTime(value));
 
 const formatDate = (date: Date) => `${MONTHS[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
 
@@ -87,6 +115,8 @@ export const AddTask: React.FC<AddTaskProps> = ({ onClose, onSuccess, task, init
   const [serverError, setServerError] = useState<string | null>(null);
   const [showDateModal, setShowDateModal] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
+  const [customTimeInput, setCustomTimeInput] = useState('');
+  const [customTimeError, setCustomTimeError] = useState<string | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(initialDateParts?.month ?? today.getMonth());
   const [calendarYear, setCalendarYear] = useState(initialDateParts?.year ?? today.getFullYear());
 
@@ -142,6 +172,27 @@ export const AddTask: React.FC<AddTaskProps> = ({ onClose, onSuccess, task, init
 
   const selectTime = (time: string) => {
     setValue('dueTime', time, { shouldValidate: true, shouldDirty: true });
+    setCustomTimeInput(time);
+    setCustomTimeError(null);
+    setShowTimeModal(false);
+  };
+
+  const openTimeModal = () => {
+    setCustomTimeInput(selectedTime || '');
+    setCustomTimeError(null);
+    setShowTimeModal(true);
+  };
+
+  const applyCustomTime = () => {
+    const normalized = formatToDisplayTime(customTimeInput);
+    if (!normalized) {
+      setCustomTimeError('Enter valid time like 12:01 PM or 14:01');
+      return;
+    }
+
+    setValue('dueTime', normalized, { shouldValidate: true, shouldDirty: true });
+    setCustomTimeInput(normalized);
+    setCustomTimeError(null);
     setShowTimeModal(false);
   };
 
@@ -187,9 +238,15 @@ export const AddTask: React.FC<AddTaskProps> = ({ onClose, onSuccess, task, init
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <LinearGradient
+        colors={[theme.bgTop, theme.bgMid, theme.bgBottom]}
+        style={StyleSheet.absoluteFillObject}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      />
       <View style={[styles.header, { paddingHorizontal: pagePadding }]}>
         <TouchableOpacity style={styles.headerButton} onPress={onClose} activeOpacity={0.8}>
-          <Ionicons name="chevron-back" size={30} color={theme.icon} />
+          <Ionicons name="chevron-back" size={30} color={theme.orangeAccent} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{task ? t('editTask') : t('createTask')}</Text>
         <TouchableOpacity style={styles.saveButton} onPress={handleSubmit(onSubmit)} activeOpacity={0.8}>
@@ -221,7 +278,7 @@ export const AddTask: React.FC<AddTaskProps> = ({ onClose, onSuccess, task, init
               }}
               render={({ field: { onChange, onBlur, value } }) => (
                 <View style={[styles.inputBox, errors.title && styles.inputBoxError]}>
-                  <Ionicons name="document-text-outline" size={24} color={theme.purpleAccent} />
+                  <Ionicons name="document-text-outline" size={24} color={theme.orangeAccent} />
                   <TextInput
                     style={styles.input}
                     placeholder={t('enterTaskName')}
@@ -247,7 +304,7 @@ export const AddTask: React.FC<AddTaskProps> = ({ onClose, onSuccess, task, init
               }}
               render={({ field: { onChange, onBlur, value } }) => (
                 <View style={[styles.inputBox, styles.textAreaBox, errors.description && styles.inputBoxError]}>
-                  <Ionicons name="list-outline" size={24} color={theme.purpleAccent} style={styles.textAreaIcon} />
+                  <Ionicons name="list-outline" size={24} color={theme.orangeAccent} style={styles.textAreaIcon} />
                   <TextInput
                     style={[styles.input, styles.textArea]}
                     placeholder={t('enterTaskDescription')}
@@ -278,11 +335,11 @@ export const AddTask: React.FC<AddTaskProps> = ({ onClose, onSuccess, task, init
                   onPress={() => setShowDateModal(true)}
                   activeOpacity={0.82}
                 >
-                  <Ionicons name="calendar-outline" size={24} color={theme.purpleAccent} />
+                  <Ionicons name="calendar-outline" size={24} color={theme.orangeAccent} />
                   <Text style={[styles.selectText, !value && styles.placeholderText]}>
                     {value || t('selectDueDate')}
                   </Text>
-                  <Ionicons name="chevron-down" size={24} color={theme.icon} />
+                  <Ionicons name="chevron-down" size={24} color={theme.orangeAccent} />
                 </TouchableOpacity>
               )}
             />
@@ -294,18 +351,21 @@ export const AddTask: React.FC<AddTaskProps> = ({ onClose, onSuccess, task, init
             <Controller
               control={control}
               name="dueTime"
-              rules={{ required: t('dueTimeRequired') }}
+              rules={{
+                required: t('dueTimeRequired'),
+                validate: value => isValidDisplayTime(value) || 'Enter valid time like 12:01 PM',
+              }}
               render={({ field: { value } }) => (
                 <TouchableOpacity
                   style={[styles.inputBox, errors.dueTime && styles.inputBoxError]}
-                  onPress={() => setShowTimeModal(true)}
+                  onPress={openTimeModal}
                   activeOpacity={0.82}
                 >
-                  <Ionicons name="time-outline" size={24} color={theme.purpleAccent} />
+                  <Ionicons name="time-outline" size={24} color={theme.orangeAccent} />
                   <Text style={[styles.selectText, !value && styles.placeholderText]}>
                     {value || t('selectDueTime')}
                   </Text>
-                  <Ionicons name="chevron-down" size={24} color={theme.icon} />
+                  <Ionicons name="chevron-down" size={24} color={theme.orangeAccent} />
                 </TouchableOpacity>
               )}
             />
@@ -319,11 +379,11 @@ export const AddTask: React.FC<AddTaskProps> = ({ onClose, onSuccess, task, init
           <View style={styles.pickerCard} onStartShouldSetResponder={() => true}>
             <View style={styles.pickerHeader}>
               <TouchableOpacity style={styles.pickerArrow} onPress={() => shiftMonth(-1)}>
-                <Ionicons name="chevron-back" size={22} color={theme.icon} />
+                <Ionicons name="chevron-back" size={22} color={theme.orangeAccent} />
               </TouchableOpacity>
               <Text style={styles.pickerTitle}>{monthLabels[calendarMonth]} {calendarYear}</Text>
               <TouchableOpacity style={styles.pickerArrow} onPress={() => shiftMonth(1)}>
-                <Ionicons name="chevron-forward" size={22} color={theme.icon} />
+                <Ionicons name="chevron-forward" size={22} color={theme.orangeAccent} />
               </TouchableOpacity>
             </View>
 
@@ -356,6 +416,26 @@ export const AddTask: React.FC<AddTaskProps> = ({ onClose, onSuccess, task, init
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowTimeModal(false)}>
           <View style={styles.timePickerCard} onStartShouldSetResponder={() => true}>
             <Text style={styles.pickerTitle}>{t('selectDueTimeTitle')}</Text>
+            <View style={styles.customTimeSection}>
+              <Text style={styles.customTimeLabel}>Enter Custom Time</Text>
+              <View style={styles.customTimeRow}>
+                <TextInput
+                  style={styles.customTimeInput}
+                  placeholder="12:01 PM or 14:01"
+                  placeholderTextColor={theme.placeholder}
+                  value={customTimeInput}
+                  onChangeText={text => {
+                    setCustomTimeInput(text);
+                    if (customTimeError) setCustomTimeError(null);
+                  }}
+                  autoCapitalize="characters"
+                />
+                <TouchableOpacity style={styles.customTimeButton} onPress={applyCustomTime} activeOpacity={0.84}>
+                  <Text style={styles.customTimeButtonText}>Set</Text>
+                </TouchableOpacity>
+              </View>
+              {customTimeError ? <Text style={styles.customTimeError}>{customTimeError}</Text> : null}
+            </View>
             <View style={styles.timeGrid}>
               {TIME_OPTIONS.map(time => {
                 const active = selectedTime === time;
@@ -381,13 +461,11 @@ export const AddTask: React.FC<AddTaskProps> = ({ onClose, onSuccess, task, init
 const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.background,
+    backgroundColor: 'transparent',
   },
   header: {
     height: 116,
-    backgroundColor: theme.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.divider,
+    ...glassHeader(theme),
     paddingTop: 46,
     flexDirection: 'row',
     alignItems: 'center',
@@ -411,7 +489,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     justifyContent: 'center',
   },
   saveText: {
-    color: theme.purpleAccent,
+    color: theme.electricBlue,
     fontSize: 20,
     fontWeight: '500',
   },
@@ -420,8 +498,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingBottom: 80,
   },
   formCard: {
-    backgroundColor: theme.surface,
-    borderRadius: 18,
+    ...glassPanel(theme),
     paddingTop: 28,
     paddingBottom: 28,
   },
@@ -460,10 +537,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   inputBox: {
     minHeight: 58,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: theme.border,
-    backgroundColor: theme.input,
+    ...glassInput(theme),
     paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
@@ -521,7 +595,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: theme.overlay,
+    backgroundColor: theme.glassOverlay,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 26,
@@ -529,8 +603,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   pickerCard: {
     width: '100%',
     maxWidth: 390,
-    backgroundColor: theme.surface,
-    borderRadius: 18,
+    ...glassPanel(theme),
     padding: 20,
   },
   pickerHeader: {
@@ -542,10 +615,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   pickerArrow: {
     width: 40,
     height: 40,
-    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.surfaceAlt,
+    ...glassButton(theme, false, { borderRadius: 20 }),
   },
   pickerTitle: {
     color: theme.text,
@@ -576,7 +648,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderRadius: 21,
   },
   activeDayCell: {
-    backgroundColor: theme.purpleAccent,
+    backgroundColor: theme.electricBlue,
   },
   dayCellText: {
     color: theme.text,
@@ -589,9 +661,50 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   timePickerCard: {
     width: '100%',
     maxWidth: 390,
-    backgroundColor: theme.surface,
-    borderRadius: 18,
+    ...glassPanel(theme),
     padding: 22,
+  },
+  customTimeSection: {
+    marginTop: 14,
+  },
+  customTimeLabel: {
+    color: theme.textSecondary,
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  customTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  customTimeInput: {
+    flex: 1,
+    minHeight: 44,
+    ...glassInput(theme, false, { borderRadius: 12 }),
+    color: theme.text,
+    fontSize: 15,
+    paddingHorizontal: 12,
+  },
+  customTimeButton: {
+    marginLeft: 10,
+    minWidth: 62,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.electricBlue,
+    ...glowShadow(theme, theme.electricBlue, 0.25),
+  },
+  customTimeButtonText: {
+    color: theme.textInverted,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  customTimeError: {
+    color: theme.error,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 6,
   },
   timeGrid: {
     flexDirection: 'row',
@@ -601,18 +714,15 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   timePill: {
     width: '47%',
     height: 46,
-    borderRadius: 23,
-    borderWidth: 1,
-    borderColor: theme.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: '3%',
     marginBottom: 12,
-    backgroundColor: theme.surface,
+    ...glassButton(theme, false, { borderRadius: 23 }),
   },
   activeTimePill: {
-    backgroundColor: theme.purpleAccent,
-    borderColor: theme.purpleAccent,
+    backgroundColor: theme.electricBlue,
+    borderColor: theme.electricBlue,
   },
   timePillText: {
     color: theme.text,

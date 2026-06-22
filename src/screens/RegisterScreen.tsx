@@ -115,11 +115,11 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={theme.bgBlue} />
+      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={theme.bgTop} />
 
-      {/* Soft brand gradient background */}
+      {/* Gradient background */}
       <LinearGradient
-        colors={[theme.bgBlue, theme.background, theme.backgroundAlt]}
+        colors={[theme.bgTop, theme.bgMid, theme.bgBottom]}
         style={styles.gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
@@ -133,7 +133,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
         {/* ── Top Row: Back ── */}
         <View style={styles.topRow}>
           <TouchableOpacity style={styles.backBtn} onPress={onNavigateToLogin}>
-            <Ionicons name="chevron-back" size={22} color={theme.navy} />
+            <Ionicons name="chevron-back" size={22} color={theme.orangeAccent} />
           </TouchableOpacity>
         </View>
 
@@ -171,10 +171,11 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>{t('fullName')}</Text>
             <View style={[styles.inputWrap, nameFocused && styles.inputWrapFocused]}>
+              <Ionicons name="person-outline" size={24} color={theme.purpleAccent} />
               <TextInput
                 style={styles.input}
                 placeholder={t('enterName')}
-                placeholderTextColor={theme.textLight}
+                placeholderTextColor={theme.text}
                 value={name}
                 onChangeText={setName}
                 autoCapitalize="words"
@@ -188,10 +189,11 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>{t('emailAddress')}</Text>
             <View style={[styles.inputWrap, emailFocused && styles.inputWrapFocused]}>
+              <Ionicons name="mail-outline" size={24} color={theme.purpleAccent} />
               <TextInput
                 style={styles.input}
                 placeholder={t('enterEmail')}
-                placeholderTextColor={theme.textLight}
+                placeholderTextColor={theme.text}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -207,10 +209,11 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>{t('password')}</Text>
             <View style={[styles.inputWrap, passwordFocused && styles.inputWrapFocused]}>
+              <Ionicons name="lock-closed-outline" size={24} color={theme.purpleAccent} />
               <TextInput
                 style={[styles.input, { flex: 1 }]}
                 placeholder={t('password')}
-                placeholderTextColor={theme.textLight}
+                placeholderTextColor={theme.text}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -221,7 +224,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color={theme.textLight}
+                  color={theme.orangeAccent}
                 />
               </TouchableOpacity>
             </View>
@@ -257,10 +260,11 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
                   : 'rgba(239,68,68,0.6)',
               },
             ]}>
+              <Ionicons name="shield-checkmark-outline" size={24} color={theme.purpleAccent} />
               <TextInput
                 style={[styles.input, { flex: 1 }]}
                 placeholder={t('repeatPassword')}
-                placeholderTextColor={theme.textLight}
+                placeholderTextColor={theme.text}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showConfirmPassword}
@@ -271,7 +275,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
                 <Ionicons
                   name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color={theme.textLight}
+                  color={theme.orangeAccent}
                 />
               </TouchableOpacity>
               {confirmPassword.length > 0 && (
@@ -320,29 +324,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* Divider */}
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerLabel}>{t('orContinueWith')}</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Social buttons */}
-          <View style={styles.socialRow}>
-            <TouchableOpacity style={styles.socialPill} activeOpacity={0.8}>
-              <Ionicons name="logo-google" size={18} color="#EA4335" />
-              <Text style={styles.socialPillText}>Google</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialCircle} activeOpacity={0.8}>
-              <Ionicons name="logo-facebook" size={20} color="#1877F2" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialCircle} activeOpacity={0.8}>
-              <Ionicons name="logo-apple" size={20} color={theme.icon} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialCircle} activeOpacity={0.8}>
-              <Ionicons name="logo-twitter" size={20} color={theme.icon} />
-            </TouchableOpacity>
-          </View>
         </View>
 
         {/* ── Bottom link ── */}
@@ -358,7 +339,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
 };
 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.bgBlue },
+  container: { flex: 1, backgroundColor: theme.bgTop },
   gradient: {
     ...StyleSheet.absoluteFill,
   },
@@ -383,8 +364,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1.5,
     borderColor: theme.border,
-    shadowRadius: 10,
-    elevation: 2,
   },
 
   // Logo
@@ -433,40 +412,35 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '500',
     color: theme.textDark,
-    marginBottom: 8,
+    marginBottom: 14,
   },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.inputBg,
-    borderRadius: 14,
+    backgroundColor: theme.input,
+    borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: theme.inputBorder,
-    paddingHorizontal: 16,
-    height: 52,
-    shadowColor: theme.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    borderColor: theme.border,
+    paddingHorizontal: 18,
+    minHeight: 58,
   },
   inputWrapFocused: {
-    borderColor: theme.blue,
-    shadowColor: theme.blue,
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 4,
+    borderColor: theme.inputFocusBorder,
+    backgroundColor: theme.input,
   },
   input: {
     flex: 1,
-    fontSize: 15,
+    minHeight: 44,
+    fontSize: 17,
     color: theme.textDark,
     fontWeight: '400',
+    marginLeft: 16,
+    paddingVertical: 0,
   },
-  eyeBtn: { padding: 4 },
+  eyeBtn: { padding: 4, marginLeft: 8 },
 
   // Strength
   strengthRow: {
@@ -523,11 +497,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderRadius: 28,
     overflow: 'hidden',
     marginBottom: 28,
-    shadowColor: theme.blue,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: theme.blueDeep,
   },
   ctaBtnGradient: {
     height: 56,
@@ -577,9 +548,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     gap: 8,
     borderWidth: 1.5,
     borderColor: theme.border,
-
-    shadowRadius: 6,
-    elevation: 2,
   },
   socialPillText: {
     fontSize: 14,
@@ -595,9 +563,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1.5,
     borderColor: theme.border,
-
-    shadowRadius: 6,
-    elevation: 2,
   },
 
   // Bottom link
