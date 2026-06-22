@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { Alert, View, StyleSheet, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useApp, COLORS } from '../AppContext';
@@ -43,7 +43,7 @@ export const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({ onNavi
           />
         </TouchableOpacity>
         <Text style={styles.headerDate}>Wed, April 26</Text>
-        <TouchableOpacity style={styles.circularButton} onPress={() => alert('No new alerts')}>
+        <TouchableOpacity style={styles.circularButton} onPress={() => Alert.alert('Notifications', 'No new alerts')}>
           <Ionicons name="notifications-outline" size={20} color={COLORS.textPrimary} />
         </TouchableOpacity>
       </View>

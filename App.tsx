@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+    Alert,
     StyleSheet, View, Text, useWindowDimensions,
     ScrollView, TouchableOpacity,
     StatusBar, Platform, Image,
@@ -24,7 +25,7 @@ type TaskDraft = { dueDate?: string; dueTime?: string };
 
 const AppContent: React.FC = () => {
     const { width: windowWidth } = useWindowDimensions();
-    const { isAuthenticated, logout, theme, colorScheme, t } = useApp();
+    const { isAuthenticated, isAuthReady, logout, theme, colorScheme, t } = useApp();
     const styles = React.useMemo(() => createStyles(theme), [theme]);
     const isDesktop = windowWidth >= 1024;
 
@@ -69,13 +70,34 @@ const AppContent: React.FC = () => {
     };
 
     const handleLogout = () => {
-        logout();
+        void logout();
         setActiveTab('Home');
         setAuthScreen('Login');
         setShowAddTaskMobile(false);
         setEditingTask(null);
         setTaskDraft(null);
     };
+
+    if (!isAuthReady) {
+        return (
+            <LinearGradient
+                colors={[theme.bgTop, theme.bgMid, theme.bgBottom]}
+                style={styles.mobileContainer}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+            >
+                <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+                <View style={styles.loadingContainer}>
+                    <Image
+                        source={require('./assets/logo.png')}
+                        style={styles.loadingLogo}
+                        resizeMode="contain"
+                    />
+                    <Text style={styles.loadingText}>{t('loading')}</Text>
+                </View>
+            </LinearGradient>
+        );
+    }
 
     // ─── Render a screen by key ──────────────────────────────────────────────────
     const renderScreen = (key: string, isShowcase: boolean) => {
@@ -103,7 +125,7 @@ const AppContent: React.FC = () => {
                         onClose={() => isShowcase ? null : closeTaskSheet()}
                         onSuccess={() => {
                             if (isShowcase) {
-                                alert('Task created! Watch the Home and Calendar screens update live.');
+                                Alert.alert('Task created', 'Watch the Home and Calendar screens update live.');
                             } else {
                                 closeTaskSheet();
                                 setActiveTab('Home');
@@ -185,7 +207,7 @@ const AppContent: React.FC = () => {
     // ─── MOBILE LAYOUT (authenticated, narrow screen) ───────────────────────────
     return (
         <LinearGradient
-                colors={[theme.bgTop, theme.bgMid, theme.bgBottom]}
+            colors={[theme.bgTop, theme.bgMid, theme.bgBottom]}
             style={styles.mobileContainer}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
@@ -301,6 +323,22 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     // ── Mobile ───────────────────────────────────────────────────────────────────
     mobileContainer: { flex: 1 },
     mobileSafeArea: { flex: 1 },
+    loadingContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 32,
+    },
+    loadingLogo: {
+        width: 220,
+        height: 84,
+        marginBottom: 16,
+    },
+    loadingText: {
+        color: theme.textPrimary,
+        fontSize: 16,
+        fontWeight: '700',
+    },
     screenContainer: { flex: 1 },
     mobileModalContainer: {
         position: 'absolute',

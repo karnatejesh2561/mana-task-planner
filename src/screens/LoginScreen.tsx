@@ -76,12 +76,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     setErrorMsg(null);
     setIsLoading(true);
     setTimeout(() => {
-      const result = login(email.trim(), password);
-      setIsLoading(false);
-      if (!result.success) {
-        setErrorMsg(result.error || t('genericError'));
-        shake();
-      }
+      void (async () => {
+        const result = await login(email.trim(), password);
+        setIsLoading(false);
+        if (!result.success) {
+          setErrorMsg(result.error || t('genericError'));
+          shake();
+        }
+      })();
     }, 600);
   };
 
@@ -239,7 +241,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgBlue },
   gradient: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
 
   scrollContent: {

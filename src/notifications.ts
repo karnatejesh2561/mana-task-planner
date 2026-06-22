@@ -2,6 +2,8 @@ import { Platform } from 'react-native';
 import notifee, { AndroidImportance, AuthorizationStatus } from '@notifee/react-native';
 import messaging from '@react-native-firebase/messaging';
 
+import { supabase } from './lib/supabase';
+
 export type TaskNotificationPayload = {
   id?: string;
   title: string;
@@ -59,4 +61,32 @@ export const getPushTokenForBackendAsync = async () => {
     console.warn('FCM token fetch failed', e);
     return null;
   }
+};
+
+export const syncPushTokenToBackendAsync = async (userId: string) => {
+  if (!supabase || !userId) return false;
+
+  const token = await getPushTokenForBackendAsync();
+  if (!token) return false;
+
+  const { error } = await supabase
+    .from('fcm_tokens')
+    .upsert(
+      {
+        user_id: userId,
+        token,
+        platform: Platform.OS === 'ios' ? 'ios' : 'android',
+        last_seen_at: new Date().toISOString(),
+      },
+      {
+        onConflict: 'token',
+      },
+    );
+
+  if (error) {
+    console.warn('Unable to sync FCM token', error.message);
+    return false;
+  }
+
+  return true;
 };

@@ -31,14 +31,14 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onLogout }) =>
     const [mode, setMode] = useState<ProfileMode>('settings');
     const [name, setName] = useState(user?.name || 'Hemanth');
     const [email, setEmail] = useState(user?.email || 'hemanth@example.com');
-    const [password, setPassword] = useState(user?.password || 'password123');
+    const [password, setPassword] = useState('');
     const [about, setAbout] = useState(user?.about || 'Building products that make life simple and productive.');
     const [photoUri, setPhotoUri] = useState(user?.photoUri || DEFAULT_AVATAR);
 
     useEffect(() => {
         setName(user?.name || 'Hemanth');
         setEmail(user?.email || 'hemanth@example.com');
-        setPassword(user?.password || 'password123');
+        setPassword('');
         setAbout(user?.about || 'Building products that make life simple and productive.');
         setPhotoUri(user?.photoUri || DEFAULT_AVATAR);
     }, [user]);
@@ -55,12 +55,13 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onLogout }) =>
         }
     };
 
-    const saveProfile = () => {
-        const result = updateProfile({ name, email, about, password, photoUri });
+    const saveProfile = async () => {
+        const result = await updateProfile({ name, email, about, password: password.trim() || undefined, photoUri });
         if (!result.success) {
             Alert.alert(t('updateProfile'), result.error || t('comingSoon', { title: t('updateProfile') }));
             return;
         }
+        setPassword('');
         setMode('details');
     };
 
@@ -72,7 +73,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onLogout }) =>
                         <Ionicons name="chevron-back" size={24} color={theme.icon} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{t('editProfile')}</Text>
-                    <TouchableOpacity style={styles.saveTopButton} onPress={saveProfile} activeOpacity={0.82}>
+                    <TouchableOpacity style={styles.saveTopButton} onPress={() => void saveProfile()} activeOpacity={0.82}>
                         <Text style={styles.saveTopText}>{t('save')}</Text>
                     </TouchableOpacity>
                 </View>
@@ -105,7 +106,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onLogout }) =>
                         </View>
                     </View>
 
-                    <TouchableOpacity style={styles.primaryButton} onPress={saveProfile} activeOpacity={0.88}>
+                    <TouchableOpacity style={styles.primaryButton} onPress={() => void saveProfile()} activeOpacity={0.88}>
                         <LinearGradient colors={[theme.purpleAccent, theme.brightBlue]} style={styles.primaryGradient}>
                             <Text style={styles.primaryText}>{t('saveChanges')}</Text>
                         </LinearGradient>

@@ -15,7 +15,6 @@ import { Controller, useForm } from 'react-hook-form';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AppTheme, useApp } from '../AppContext';
 import { Task } from '../types';
-import { notifyTaskCreatedAsync } from '../notifications';
 
 interface AddTaskProps {
   onClose: () => void;
@@ -171,17 +170,11 @@ export const AddTask: React.FC<AddTaskProps> = ({ onClose, onSuccess, task, init
         assigneeIds: ['1'],
       });
 
-    if (!result.success) {
-      setServerError(result.error || t('unableCreateTask'));
+    const resolved = await result;
+
+    if (!resolved.success) {
+      setServerError(resolved.error || t('unableCreateTask'));
       return;
-    }
-
-    if (!task) {
-      const body = values.dueDate && values.dueTime
-        ? t('taskCreatedNotificationBody', { dueDate: values.dueDate, dueTime: values.dueTime })
-        : t('taskCreatedNotificationBodyNoTime');
-
-      await notifyTaskCreatedAsync({ title: trimmedTitle, dueDate: values.dueDate, dueTime: values.dueTime }, body);
     }
 
     onSuccess();

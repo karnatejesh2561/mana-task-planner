@@ -36,15 +36,17 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onNa
     setSuccessMsg(null);
     setIsLoading(true);
     setTimeout(() => {
-      const result = resetPassword(email.trim());
-      setIsLoading(false);
-      if (result.success) {
-        setSuccessMsg(t('recoverySent', { email: email.trim() }));
-        setIsSubmitted(true);
-      } else {
-        setErrorMsg(result.error || t('genericError'));
-        shake();
-      }
+      void (async () => {
+        const result = await resetPassword(email.trim());
+        setIsLoading(false);
+        if (result.success) {
+          setSuccessMsg(t('recoverySent', { email: email.trim() }));
+          setIsSubmitted(true);
+        } else {
+          setErrorMsg(result.error || t('genericError'));
+          shake();
+        }
+      })();
     }, 800);
   };
 

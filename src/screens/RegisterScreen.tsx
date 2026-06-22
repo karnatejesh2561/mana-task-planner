@@ -53,6 +53,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
@@ -74,14 +75,28 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
 
   const handleRegister = () => {
     setErrorMsg(null);
+    setSuccessMsg(null);
+    if (!agreedToTerms) {
+      setErrorMsg(t('termsRequired'));
+      shake();
+      return;
+    }
     setIsLoading(true);
     setTimeout(() => {
-      const result = register(name, email.trim(), password, confirmPassword);
-      setIsLoading(false);
-      if (!result.success) {
-        setErrorMsg(result.error || t('genericError'));
-        shake();
-      }
+      void (async () => {
+        const result = await register(name, email.trim(), password, confirmPassword);
+        setIsLoading(false);
+        if (!result.success) {
+          setErrorMsg(result.error || t('genericError'));
+          shake();
+          return;
+        }
+
+        if (result.requiresEmailConfirmation) {
+          setSuccessMsg(t('verifyEmailToContinue'));
+          setTimeout(onNavigateToLogin, 1200);
+        }
+      })();
     }, 600);
   };
 
@@ -140,6 +155,13 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
             <Ionicons name="alert-circle-outline" size={15} color={theme.error} />
             <Text style={styles.errorText}>{errorMsg}</Text>
           </Animated.View>
+        )}
+
+        {successMsg && (
+          <View style={[styles.errorBox, { borderColor: 'rgba(34,197,94,0.25)', backgroundColor: 'rgba(34,197,94,0.08)' }]}>
+            <Ionicons name="checkmark-circle-outline" size={15} color={theme.success} />
+            <Text style={[styles.errorText, { color: theme.success }]}>{successMsg}</Text>
+          </View>
         )}
 
         {/* ── Form ── */}
@@ -338,7 +360,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
 const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgBlue },
   gradient: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
 
   scrollContent: {

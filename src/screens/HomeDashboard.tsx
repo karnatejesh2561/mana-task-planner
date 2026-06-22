@@ -32,7 +32,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onAddTaskPress, on
                 {
                     text: t('delete'),
                     style: 'destructive',
-                    onPress: () => deleteTask(task.id),
+                    onPress: () => {
+                        void deleteTask(task.id);
+                    },
                 },
             ],
         );
