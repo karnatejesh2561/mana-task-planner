@@ -13,8 +13,8 @@ import {
   StatusBar,
   Dimensions,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import LinearGradient from 'react-native-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AppTheme, useApp } from '../AppContext';
 
 const { width } = Dimensions.get('window');

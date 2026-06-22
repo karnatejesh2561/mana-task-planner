@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Modal, View, StyleSheet, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AppTheme, useApp } from '../AppContext';
 import { Task } from '../types';
 

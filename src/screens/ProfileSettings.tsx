@@ -9,9 +9,9 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as ImagePicker from 'expo-image-picker';
-import { Ionicons } from '@expo/vector-icons';
+import LinearGradient from 'react-native-linear-gradient';
+import * as ImagePicker from 'react-native-image-picker';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AppTheme, useApp } from '../AppContext';
 import { LANGUAGE_LABELS } from '../i18n';
 
@@ -44,20 +44,13 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onLogout }) =>
     }, [user]);
 
     const pickImage = async () => {
-        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!permission.granted) {
-            Alert.alert(t('permissionRequired'), t('photoPermission'));
-            return;
-        }
-
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'],
-            allowsEditing: true,
-            aspect: [1, 1],
+        const result = await ImagePicker.launchImageLibrary({
+            mediaType: 'photo',
+            selectionLimit: 1,
             quality: 0.9,
         });
 
-        if (!result.canceled && result.assets[0]?.uri) {
+        if (!result.didCancel && result.assets && result.assets[0]?.uri) {
             setPhotoUri(result.assets[0].uri);
         }
     };

@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
-import * as Notifications from 'expo-notifications';
+import notifee, { AndroidImportance, AuthorizationStatus } from '@notifee/react-native';
+import messaging from '@react-native-firebase/messaging';
 
 export type TaskNotificationPayload = {
   id?: string;
@@ -9,68 +9,54 @@ export type TaskNotificationPayload = {
   dueTime?: string;
 };
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
-
 export const configureNotificationsAsync = async () => {
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('tasks', {
+    await notifee.createChannel({
+      id: 'tasks',
       name: 'Task updates',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
+      importance: AndroidImportance.HIGH,
       lightColor: '#6D4AFF',
-      sound: 'default',
     });
   }
-
-  return Notifications.getPermissionsAsync();
 };
 
 export const requestNotificationPermissionAsync = async () => {
   await configureNotificationsAsync();
-
-  const current = await Notifications.getPermissionsAsync();
-  if (current.status === 'granted') return true;
-
-  const requested = await Notifications.requestPermissionsAsync();
-  return requested.status === 'granted';
+  const settings = await notifee.requestPermission();
+  return settings.authorizationStatus === AuthorizationStatus.AUTHORIZED;
 };
 
 export const notifyTaskCreatedAsync = async (task: TaskNotificationPayload, body: string) => {
   const allowed = await requestNotificationPermissionAsync();
   if (!allowed) return false;
 
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: task.title,
-      body,
-      data: {
-        type: 'task-created',
-        task,
-      },
-      sound: 'default',
+  await notifee.displayNotification({
+    title: task.title,
+    body,
+    data: {
+      type: 'task-created',
+      task: JSON.stringify(task),
     },
-    trigger: null,
+    android: {
+      channelId: 'tasks',
+      pressAction: {
+        id: 'default',
+      },
+    },
   });
 
   return true;
 };
 
-export const getExpoPushTokenForBackendAsync = async () => {
+export const getPushTokenForBackendAsync = async () => {
   const allowed = await requestNotificationPermissionAsync();
   if (!allowed) return null;
 
-  const projectId =
-    Constants.expoConfig?.extra?.eas?.projectId ??
-    Constants.easConfig?.projectId;
-
-  if (!projectId) return null;
-
-  return (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+  try {
+    const token = await messaging().getToken();
+    return token;
+  } catch (e) {
+    console.warn('FCM token fetch failed', e);
+    return null;
+  }
 };
