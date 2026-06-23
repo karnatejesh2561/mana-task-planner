@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Image,
     Modal,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -12,8 +14,7 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { AppTheme, useApp } from '../AppContext';
-import { glassButton, glassInput, glassPanel } from '../theme/glass';
+import { useApp } from '../AppContext';
 
 interface DefaultReminderProps {
     onBack: () => void;
@@ -23,36 +24,88 @@ type ReminderOption = {
     id: string;
     label: string;
     sublabel: string;
-    minutes: number | null; // null = custom
+    minutes: number | null;
+    iconName: keyof typeof Ionicons.glyphMap;
+    iconColor: string;
+    iconBg: string;
+    iconBgDark: string;
 };
 
 type SnoozeOption = '5 minutes' | '10 minutes' | '15 minutes' | '30 minutes' | '1 hour';
 
 const REMINDER_OPTIONS: ReminderOption[] = [
-    { id: 'at_time', label: 'At time of task', sublabel: 'Remind me at the exact due time', minutes: 0 },
-    { id: '5min', label: '5 minutes before', sublabel: 'Remind me 5 minutes before', minutes: 5 },
-    { id: '15min', label: '15 minutes before', sublabel: 'Remind me 15 minutes before', minutes: 15 },
-    { id: '30min', label: '30 minutes before', sublabel: 'Remind me 30 minutes before', minutes: 30 },
-    { id: '1hr', label: '1 hour before', sublabel: 'Remind me 1 hour before', minutes: 60 },
-    { id: 'custom', label: 'Custom', sublabel: 'Choose a custom time', minutes: null },
+    {
+        id: 'at_time',
+        label: 'At time of task',
+        sublabel: 'Remind me at the exact due time',
+        minutes: 0,
+        iconName: 'radio-button-on-outline',
+        iconColor: '#0A66FF',
+        iconBg: 'rgba(10,102,255,0.10)',
+        iconBgDark: 'rgba(10,102,255,0.18)',
+    },
+    {
+        id: '5min',
+        label: '5 minutes before',
+        sublabel: 'Remind me 5 minutes early',
+        minutes: 5,
+        iconName: 'timer-outline',
+        iconColor: '#22C55E',
+        iconBg: 'rgba(34,197,94,0.10)',
+        iconBgDark: 'rgba(34,197,94,0.18)',
+    },
+    {
+        id: '15min',
+        label: '15 minutes before',
+        sublabel: 'Remind me 15 minutes early',
+        minutes: 15,
+        iconName: 'time-outline',
+        iconColor: '#F59E0B',
+        iconBg: 'rgba(245,158,11,0.10)',
+        iconBgDark: 'rgba(245,158,11,0.18)',
+    },
+    {
+        id: '30min',
+        label: '30 minutes before',
+        sublabel: 'Remind me half an hour early',
+        minutes: 30,
+        iconName: 'hourglass-outline',
+        iconColor: '#FF6B00',
+        iconBg: 'rgba(255,107,0,0.10)',
+        iconBgDark: 'rgba(255,107,0,0.18)',
+    },
+    {
+        id: '1hr',
+        label: '1 hour before',
+        sublabel: 'Remind me an hour early',
+        minutes: 60,
+        iconName: 'alarm-outline',
+        iconColor: '#8B5CF6',
+        iconBg: 'rgba(139,92,246,0.10)',
+        iconBgDark: 'rgba(139,92,246,0.18)',
+    },
+    {
+        id: 'custom',
+        label: 'Custom',
+        sublabel: 'Choose a custom time',
+        minutes: null,
+        iconName: 'settings-outline',
+        iconColor: '#EC4899',
+        iconBg: 'rgba(236,72,153,0.10)',
+        iconBgDark: 'rgba(236,72,153,0.18)',
+    },
 ];
 
 const SNOOZE_OPTIONS: SnoozeOption[] = ['5 minutes', '10 minutes', '15 minutes', '30 minutes', '1 hour'];
 
 const labelToSnoozeMinutes = (value: SnoozeOption) => {
     switch (value) {
-        case '5 minutes':
-            return 5;
-        case '10 minutes':
-            return 10;
-        case '15 minutes':
-            return 15;
-        case '30 minutes':
-            return 30;
-        case '1 hour':
-            return 60;
-        default:
-            return 10;
+        case '5 minutes': return 5;
+        case '10 minutes': return 10;
+        case '15 minutes': return 15;
+        case '30 minutes': return 30;
+        case '1 hour': return 60;
+        default: return 10;
     }
 };
 
@@ -74,13 +127,33 @@ const reminderMinutesToOptionId = (minutes: number) => {
     return 'custom';
 };
 
-export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
-    const { theme, notificationSettings, notificationSettingsReady, updateNotificationSettings } = useApp();
-    const styles = useMemo(() => createStyles(theme), [theme]);
+// ─── Section Label ────────────────────────────────────────────────────────────
+const SectionLabel: React.FC<{ label: string; color: string }> = ({ label, color }) => (
+    <Text style={[sectionLabelStyle.text, { color }]}>{label}</Text>
+);
+const sectionLabelStyle = StyleSheet.create({
+    text: {
+        fontSize: 12,
+        fontWeight: '700',
+        marginBottom: 8,
+        marginTop: 6,
+        letterSpacing: 0.4,
+        textTransform: 'uppercase',
+    },
+});
 
-    const [selectedReminder, setSelectedReminder] = useState<string>(reminderMinutesToOptionId(notificationSettings.defaultReminderMinutes));
-    const [selectedSnooze, setSelectedSnooze] = useState<SnoozeOption>(snoozeMinutesToLabel(notificationSettings.snoozeMinutes));
-    const [showSnoozeDropdown, setShowSnoozeDropdown] = useState(false);
+// ─── Main Component ───────────────────────────────────────────────────────────
+export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
+    const { theme, colorScheme, notificationSettings, notificationSettingsReady, updateNotificationSettings } = useApp();
+    const isDark = colorScheme === 'dark';
+
+    const [selectedReminder, setSelectedReminder] = useState<string>(
+        reminderMinutesToOptionId(notificationSettings.defaultReminderMinutes),
+    );
+    const [selectedSnooze, setSelectedSnooze] = useState<SnoozeOption>(
+        snoozeMinutesToLabel(notificationSettings.snoozeMinutes),
+    );
+    const [showSnoozeModal, setShowSnoozeModal] = useState(false);
     const [showCustomModal, setShowCustomModal] = useState(false);
     const [customMinutes, setCustomMinutes] = useState('');
     const [customMinutesSaved, setCustomMinutesSaved] = useState(
@@ -115,7 +188,7 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
             return;
         }
         setSelectedReminder(id);
-        const selected = REMINDER_OPTIONS.find(option => option.id === id);
+        const selected = REMINDER_OPTIONS.find(o => o.id === id);
         if (selected && selected.minutes !== null) {
             void persistPatch({ defaultReminderMinutes: selected.minutes });
         }
@@ -130,152 +203,280 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
         void persistPatch({ defaultReminderMinutes: mins });
     };
 
-    const getCustomSublabel = () => {
-        if (customMinutesSaved) {
-            return `Remind me ${customMinutesSaved} minutes before`;
-        }
-        return 'Choose a custom time';
-    };
+    const getCustomSublabel = () =>
+        customMinutesSaved ? `Remind me ${customMinutesSaved} minutes before` : 'Choose a custom time';
+
+    const screenBg = isDark ? '#081220' : '#F0F4FF';
+    const cardBg = isDark ? '#0F1D2E' : '#FFFFFF';
+    const cardBorder = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+    // Currently selected option info for hero display
+    const activeOption = REMINDER_OPTIONS.find(o => o.id === selectedReminder) ?? REMINDER_OPTIONS[0];
+    const activeLabel = selectedReminder === 'custom' ? getCustomSublabel() : activeOption.sublabel;
 
     if (!notificationSettingsReady) {
         return (
-            <View style={styles.loadingScreen}>
-                <ActivityIndicator size="small" color={theme.electricBlue} />
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: screenBg }}>
+                <ActivityIndicator size="small" color="#0A66FF" />
             </View>
         );
     }
 
     return (
-        <View style={styles.screen}>
+        <View style={{ flex: 1, backgroundColor: screenBg }}>
+            {/* Gradient */}
             <LinearGradient
-                colors={[theme.bgTop, theme.bgMid, theme.bgBottom]}
-                style={StyleSheet.absoluteFillObject}
+                colors={isDark ? ['#081220', '#0D1825', '#132438'] : ['#F7FAFF', '#FFFFFF', '#F0F4FF']}
+                style={StyleSheet.absoluteFill}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
             />
-            {/* Header */}
+            {!isDark && (
+                <Image
+                    source={require('../../assets/background-image.png')}
+                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', opacity: 0.35 }}
+                    resizeMode="cover"
+                />
+            )}
+
+            {/* ── Header ── */}
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.8}>
-                    <Ionicons name="chevron-back" size={24} color={theme.orangeAccent} />
+                <TouchableOpacity
+                    style={[
+                        styles.backBtn,
+                        {
+                            backgroundColor: isDark ? 'rgba(10, 22, 40, 0.5)' : 'rgba(255, 255, 255, 0.45)',
+                            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                        },
+                    ]}
+                    onPress={onBack}
+                    activeOpacity={0.8}
+                >
+                    <Ionicons name="chevron-back" size={22} color={theme.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Default Reminder</Text>
+                <View style={styles.headerCenter}>
+                    <Text style={[styles.headerTitle, { color: theme.text }]}>Default Reminder</Text>
+                    <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
+                        Set your preferred alert timing
+                    </Text>
+                </View>
                 <View style={styles.headerSpacer} />
             </View>
 
-            <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.content}
-            >
-                {/* Hero Card */}
-                <View style={styles.heroCard}>
-                    <View style={styles.heroIconBox}>
-                        <Ionicons name="time-outline" size={24} color={theme.orangeAccent} />
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+
+                {/* ── Hero Status Card ── */}
+                <View
+                    style={[
+                        styles.heroCard,
+                        {
+                            backgroundColor: isDark ? 'rgba(255,107,0,0.12)' : 'rgba(255,107,0,0.07)',
+                            borderColor: isDark ? 'rgba(255,107,0,0.30)' : 'rgba(255,107,0,0.20)',
+                        },
+                    ]}
+                >
+                    <LinearGradient
+                        colors={isDark
+                            ? ['rgba(255,107,0,0.15)', 'transparent']
+                            : ['rgba(255,107,0,0.08)', 'transparent']}
+                        style={StyleSheet.absoluteFill}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                    />
+                    <View style={[styles.heroIconBox, { backgroundColor: isDark ? 'rgba(255,107,0,0.22)' : 'rgba(255,107,0,0.14)' }]}>
+                        <Ionicons name="time" size={28} color="#FF6B00" />
                     </View>
                     <View style={styles.heroCopy}>
-                        <Text style={styles.heroTitle}>Default Reminder</Text>
-                        <Text style={styles.heroSub}>
-                            Set the default reminder time for{'\n'}new tasks.
-                        </Text>
+                        <Text style={[styles.heroLabel, { color: theme.textSecondary }]}>Current Reminder</Text>
+                        <Text style={[styles.heroTitle, { color: theme.text }]}>{activeOption.label}</Text>
+                        <Text style={[styles.heroSub, { color: theme.textSecondary }]}>{activeLabel}</Text>
                     </View>
                 </View>
 
-                {/* Reminder Time Section */}
-                <Text style={styles.sectionLabel}>Reminder Time</Text>
-                <View style={styles.card}>
-                    {REMINDER_OPTIONS.map((opt, idx) => {
-                        const isSelected = selectedReminder === opt.id;
-                        const isLast = idx === REMINDER_OPTIONS.length - 1;
-                        const sublabel = opt.id === 'custom' ? getCustomSublabel() : opt.sublabel;
+                {/* ── Reminder Time Options ── */}
+                <SectionLabel label="Reminder Time" color={theme.textSecondary} />
 
-                        return (
-                            <TouchableOpacity
-                                key={opt.id}
-                                style={[styles.reminderRow, !isLast && styles.rowDivider]}
-                                activeOpacity={0.75}
-                                onPress={() => handleSelectReminder(opt.id)}
-                            >
-                                {/* Radio */}
-                                <View style={[styles.radio, isSelected && styles.radioSelected]}>
-                                    {isSelected && <View style={styles.radioDot} />}
+                {REMINDER_OPTIONS.map((opt) => {
+                    const isSelected = selectedReminder === opt.id;
+                    const sublabel = opt.id === 'custom' ? getCustomSublabel() : opt.sublabel;
+                    const bg = isDark ? opt.iconBgDark : opt.iconBg;
+
+                    return (
+                        <TouchableOpacity
+                            key={opt.id}
+                            onPress={() => handleSelectReminder(opt.id)}
+                            activeOpacity={0.82}
+                            style={[
+                                styles.optionCard,
+                                {
+                                    backgroundColor: isSelected
+                                        ? isDark ? 'rgba(10,102,255,0.12)' : 'rgba(10,102,255,0.06)'
+                                        : cardBg,
+                                    borderColor: isSelected
+                                        ? isDark ? 'rgba(10,102,255,0.40)' : 'rgba(10,102,255,0.28)'
+                                        : cardBorder,
+                                    shadowColor: isDark ? '#000' : '#0A66FF',
+                                    shadowOpacity: isDark ? 0.18 : 0.05,
+                                    shadowRadius: 10,
+                                    shadowOffset: { width: 0, height: 2 },
+                                },
+                            ]}
+                        >
+                            {/* Subtle selected tint */}
+                            {isSelected && (
+                                <LinearGradient
+                                    colors={isDark
+                                        ? ['rgba(10,102,255,0.14)', 'transparent']
+                                        : ['rgba(10,102,255,0.07)', 'transparent']}
+                                    style={StyleSheet.absoluteFill}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                />
+                            )}
+
+                            {/* Icon Circle */}
+                            <View style={[styles.optionIconCircle, { backgroundColor: isSelected ? bg : (isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)') }]}>
+                                <Ionicons
+                                    name={opt.iconName}
+                                    size={20}
+                                    color={isSelected ? opt.iconColor : (isDark ? '#4A6080' : '#B0BCC8')}
+                                />
+                            </View>
+
+                            {/* Text */}
+                            <View style={styles.optionTextBlock}>
+                                <Text style={[
+                                    styles.optionLabel,
+                                    { color: isSelected ? '#0A66FF' : theme.text },
+                                ]}>
+                                    {opt.label}
+                                </Text>
+                                <Text style={[styles.optionSublabel, { color: theme.textSecondary }]} numberOfLines={1}>
+                                    {sublabel}
+                                </Text>
+                            </View>
+
+                            {/* Radio / Checkmark */}
+                            {isSelected ? (
+                                <View style={styles.checkCircle}>
+                                    <Ionicons name="checkmark" size={14} color="#FFFFFF" />
                                 </View>
+                            ) : (
+                                <View style={[styles.radioEmpty, { borderColor: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.18)' }]} />
+                            )}
+                        </TouchableOpacity>
+                    );
+                })}
 
-                                <View style={styles.reminderCopy}>
-                                    <Text style={[styles.reminderLabel, isSelected && styles.reminderLabelActive]}>
-                                        {opt.label}
-                                    </Text>
-                                    <Text style={styles.reminderSub}>{sublabel}</Text>
-                                </View>
+                {/* ── Snooze Section ── */}
+                <SectionLabel label="Snooze Duration" color={theme.textSecondary} />
 
-                                {isSelected && (
-                                    <Ionicons name="checkmark-circle" size={20} color={theme.orangeAccent} />
-                                )}
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
+                <TouchableOpacity
+                    onPress={() => setShowSnoozeModal(true)}
+                    activeOpacity={0.82}
+                    style={[
+                        styles.snoozeCard,
+                        {
+                            backgroundColor: cardBg,
+                            borderColor: cardBorder,
+                            shadowColor: isDark ? '#000' : '#0A66FF',
+                            shadowOpacity: isDark ? 0.18 : 0.05,
+                            shadowRadius: 10,
+                            shadowOffset: { width: 0, height: 2 },
+                        },
+                    ]}
+                >
+                    <View style={[styles.optionIconCircle, { backgroundColor: isDark ? 'rgba(99,102,241,0.18)' : 'rgba(99,102,241,0.10)' }]}>
+                        <Ionicons name="alarm-outline" size={20} color="#6366F1" />
+                    </View>
+                    <View style={styles.optionTextBlock}>
+                        <Text style={[styles.optionLabel, { color: theme.text }]}>Snooze Duration</Text>
+                        <Text style={[styles.optionSublabel, { color: theme.textSecondary }]}>
+                            How long to delay a snoozed alert
+                        </Text>
+                    </View>
+                    <View style={styles.snoozeRight}>
+                        <Text style={[styles.snoozeValue, { color: '#0A66FF' }]}>{selectedSnooze}</Text>
+                        <Ionicons name="chevron-forward" size={16} color={isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.3)'} />
+                    </View>
+                </TouchableOpacity>
 
-                {/* Snooze Option Section */}
-                <Text style={styles.sectionLabel}>Snooze Option</Text>
-                <View style={styles.card}>
-                    <TouchableOpacity
-                        style={styles.snoozeRow}
-                        activeOpacity={0.8}
-                        onPress={() => setShowSnoozeDropdown(true)}
-                    >
-                        <View style={styles.snoozeIconBox}>
-                            <Ionicons name="alarm-outline" size={20} color={theme.orangeAccent} />
-                        </View>
-                        <Text style={styles.snoozeLabel}>Snooze Duration</Text>
-                        <View style={styles.snoozeRight}>
-                            <Text style={styles.snoozeValue}>{selectedSnooze}</Text>
-                            <Ionicons name="chevron-down" size={16} color={theme.orangeAccent} />
-                        </View>
-                    </TouchableOpacity>
-                </View>
             </ScrollView>
 
-            {/* Snooze Dropdown Modal */}
+            {/* ── Snooze Picker Modal ── */}
             <Modal
-                visible={showSnoozeDropdown}
+                visible={showSnoozeModal}
                 transparent
                 animationType="fade"
-                onRequestClose={() => setShowSnoozeDropdown(false)}
+                onRequestClose={() => setShowSnoozeModal(false)}
             >
                 <TouchableOpacity
                     style={styles.modalOverlay}
                     activeOpacity={1}
-                    onPress={() => setShowSnoozeDropdown(false)}
+                    onPress={() => setShowSnoozeModal(false)}
                 >
-                    <View style={styles.dropdownContainer}>
-                        <Text style={styles.dropdownTitle}>Snooze Duration</Text>
+                    <TouchableOpacity
+                        activeOpacity={1}
+                        style={[
+                            styles.modalCard,
+                            {
+                                backgroundColor: isDark ? '#0F1D2E' : '#FFFFFF',
+                                borderColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)',
+                            },
+                        ]}
+                    >
+                        {/* Modal header */}
+                        <View style={styles.modalHeader}>
+                            <View style={[styles.modalIconBox, { backgroundColor: isDark ? 'rgba(99,102,241,0.20)' : 'rgba(99,102,241,0.12)' }]}>
+                                <Ionicons name="alarm-outline" size={22} color="#6366F1" />
+                            </View>
+                            <View>
+                                <Text style={[styles.modalTitle, { color: theme.text }]}>Snooze Duration</Text>
+                                <Text style={[styles.modalSub, { color: theme.textSecondary }]}>Select delay time</Text>
+                            </View>
+                        </View>
+
+                        {/* Options */}
                         {SNOOZE_OPTIONS.map((opt, idx) => {
                             const isSelected = selectedSnooze === opt;
                             const isLast = idx === SNOOZE_OPTIONS.length - 1;
                             return (
                                 <TouchableOpacity
                                     key={opt}
-                                    style={[styles.dropdownRow, !isLast && styles.dropdownDivider]}
-                                    activeOpacity={0.75}
                                     onPress={() => {
                                         setSelectedSnooze(opt);
-                                        setShowSnoozeDropdown(false);
+                                        setShowSnoozeModal(false);
                                         void persistPatch({ snoozeMinutes: labelToSnoozeMinutes(opt) });
                                     }}
+                                    activeOpacity={0.78}
+                                    style={[
+                                        styles.snoozeOptRow,
+                                        !isLast && {
+                                            borderBottomWidth: StyleSheet.hairlineWidth,
+                                            borderBottomColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)',
+                                        },
+                                    ]}
                                 >
-                                    <Text style={[styles.dropdownOpt, isSelected && styles.dropdownOptActive]}>
+                                    <Text style={[
+                                        styles.snoozeOptText,
+                                        { color: isSelected ? '#0A66FF' : theme.text },
+                                        isSelected && { fontWeight: '700' },
+                                    ]}>
                                         {opt}
                                     </Text>
                                     {isSelected && (
-                                        <Ionicons name="checkmark" size={18} color={theme.orangeAccent} />
+                                        <View style={styles.checkCircleSmall}>
+                                            <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                                        </View>
                                     )}
                                 </TouchableOpacity>
                             );
                         })}
-                    </View>
+                    </TouchableOpacity>
                 </TouchableOpacity>
             </Modal>
 
-            {/* Custom Reminder Modal */}
+            {/* ── Custom Reminder Modal ── */}
             <Modal
                 visible={showCustomModal}
                 transparent
@@ -288,38 +489,71 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
                     onPress={() => setShowCustomModal(false)}
                 >
                     <TouchableOpacity
-                        style={styles.customModalCard}
                         activeOpacity={1}
-                        onPress={() => { /* prevent close */ }}
+                        style={[
+                            styles.modalCard,
+                            {
+                                backgroundColor: isDark ? '#0F1D2E' : '#FFFFFF',
+                                borderColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)',
+                            },
+                        ]}
+                        onPress={() => { }}
                     >
-                        <Text style={styles.customModalTitle}>Custom Reminder</Text>
-                        <Text style={styles.customModalSub}>Enter minutes before the task</Text>
-                        <View style={styles.customInputRow}>
+                        {/* Modal header */}
+                        <View style={styles.modalHeader}>
+                            <View style={[styles.modalIconBox, { backgroundColor: isDark ? 'rgba(236,72,153,0.20)' : 'rgba(236,72,153,0.12)' }]}>
+                                <Ionicons name="settings-outline" size={22} color="#EC4899" />
+                            </View>
+                            <View>
+                                <Text style={[styles.modalTitle, { color: theme.text }]}>Custom Reminder</Text>
+                                <Text style={[styles.modalSub, { color: theme.textSecondary }]}>Minutes before the task</Text>
+                            </View>
+                        </View>
+
+                        {/* Input */}
+                        <View style={[
+                            styles.customInputRow,
+                            {
+                                backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)',
+                                borderColor: '#0A66FF',
+                            },
+                        ]}>
                             <TextInput
-                                style={styles.customInput}
+                                style={[styles.customInput, { color: theme.text }]}
                                 value={customMinutes}
                                 onChangeText={setCustomMinutes}
                                 placeholder="e.g. 45"
-                                placeholderTextColor={theme.placeholder}
+                                placeholderTextColor={isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.25)'}
                                 keyboardType="number-pad"
                                 maxLength={4}
                                 autoFocus
                             />
-                            <Text style={styles.customInputUnit}>min</Text>
+                            <Text style={[styles.customInputUnit, { color: theme.textSecondary }]}>min</Text>
                         </View>
-                        <View style={styles.customModalButtons}>
+
+                        {/* Buttons */}
+                        <View style={styles.modalBtnRow}>
                             <TouchableOpacity
-                                style={[styles.customModalBtn, styles.customModalBtnCancel]}
+                                style={[
+                                    styles.modalBtn,
+                                    { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F3F4F6' },
+                                ]}
                                 onPress={() => setShowCustomModal(false)}
                             >
-                                <Text style={styles.customModalBtnCancelText}>Cancel</Text>
+                                <Text style={[styles.modalBtnCancel, { color: theme.textSecondary }]}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.customModalBtn, styles.customModalBtnSave]}
+                                style={[styles.modalBtn, { backgroundColor: '#0A66FF' }]}
                                 onPress={handleSaveCustom}
                                 disabled={isSaving}
                             >
-                                <Text style={styles.customModalBtnSaveText}>Set</Text>
+                                <LinearGradient
+                                    colors={['#0A66FF', '#3B82F6']}
+                                    style={StyleSheet.absoluteFill}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                />
+                                <Text style={styles.modalBtnSave}>Set Reminder</Text>
                             </TouchableOpacity>
                         </View>
                     </TouchableOpacity>
@@ -329,280 +563,261 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
     );
 };
 
-/* ─── Styles ────────────────────────────────────────────────────────── */
-const createStyles = (theme: AppTheme) =>
-    StyleSheet.create({
-        loadingScreen: {
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'transparent',
-        },
-        screen: {
-            flex: 1,
-            backgroundColor: 'transparent',
-        },
-        header: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingTop: 56,
-            paddingBottom: 14,
-            paddingHorizontal: 16,
-            backgroundColor: 'transparent',
-        },
-        backBtn: {
-            width: 40,
-            height: 40,
-            alignItems: 'center',
-            justifyContent: 'center',
-            ...glassButton(theme, false, { borderRadius: 20 }),
-        },
-        headerTitle: {
-            flex: 1,
-            textAlign: 'center',
-            fontSize: 17,
-            fontWeight: '700',
-            color: theme.text,
-            marginRight: 40,
-        },
-        headerSpacer: { width: 40 },
-        content: {
-            paddingHorizontal: 18,
-            paddingBottom: 110,
-            paddingTop: 6,
-        },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const styles = StyleSheet.create({
+    // Header
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingTop: Platform.OS === 'ios' ? 56 : 40,
+        paddingBottom: 12,
+        paddingHorizontal: 18,
+    },
+    backBtn: {
+        width: 42,
+        height: 42,
+        borderRadius: 12,
+        borderWidth: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerCenter: {
+        flex: 1,
+        paddingLeft: 14,
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontWeight: '800',
+        letterSpacing: -0.4,
+        marginBottom: 1,
+    },
+    headerSubtitle: {
+        fontSize: 12,
+        fontWeight: '400',
+    },
+    headerSpacer: { width: 42 },
 
-        /* Hero card */
-        heroCard: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            ...glassPanel(theme, { borderRadius: 18 }),
-            padding: 16,
-            marginBottom: 24,
-        },
-        heroIconBox: {
-            width: 48,
-            height: 48,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginRight: 14,
-            ...glassButton(theme, false, { borderRadius: 12, backgroundColor: theme.avatarBg }),
-        },
-        heroCopy: { flex: 1, minWidth: 0 },
-        heroTitle: {
-            fontSize: 15,
-            fontWeight: '700',
-            color: theme.text,
-            marginBottom: 4,
-        },
-        heroSub: {
-            fontSize: 12,
-            color: theme.textSecondary,
-            lineHeight: 17,
-        },
+    content: {
+        paddingHorizontal: 18,
+        paddingTop: 10,
+        paddingBottom: 120,
+    },
 
-        /* Section label */
-        sectionLabel: {
-            fontSize: 13,
-            fontWeight: '700',
-            color: theme.textSecondary,
-            marginBottom: 10,
-            marginTop: 2,
-            letterSpacing: 0.2,
-        },
+    // Hero Card
+    heroCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 18,
+        borderRadius: 18,
+        borderWidth: 1,
+        marginBottom: 22,
+        overflow: 'hidden',
+        shadowColor: '#FF6B00',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 14,
+    },
+    heroIconBox: {
+        width: 56,
+        height: 56,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 14,
+    },
+    heroCopy: { flex: 1 },
+    heroLabel: {
+        fontSize: 11,
+        fontWeight: '600',
+        letterSpacing: 0.6,
+        textTransform: 'uppercase',
+        marginBottom: 3,
+    },
+    heroTitle: {
+        fontSize: 17,
+        fontWeight: '800',
+        marginBottom: 3,
+    },
+    heroSub: {
+        fontSize: 12,
+        fontWeight: '400',
+        lineHeight: 17,
+    },
 
-        /* Card */
-        card: {
-            ...glassPanel(theme, { borderRadius: 18 }),
-            marginBottom: 20,
-            overflow: 'hidden',
-        },
+    // Option Cards
+    optionCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderRadius: 16,
+        borderWidth: 1,
+        marginBottom: 10,
+        overflow: 'hidden',
+    },
+    optionIconCircle: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    optionTextBlock: {
+        flex: 1,
+        marginLeft: 14,
+        marginRight: 10,
+    },
+    optionLabel: {
+        fontSize: 15,
+        fontWeight: '700',
+        marginBottom: 3,
+    },
+    optionSublabel: {
+        fontSize: 12,
+        fontWeight: '400',
+    },
+    checkCircle: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#0A66FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    radioEmpty: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        borderWidth: 2,
+    },
 
-        /* Reminder rows */
-        reminderRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingHorizontal: 16,
-            paddingVertical: 14,
-        },
-        rowDivider: {
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: theme.divider,
-        },
-        radio: {
-            width: 22,
-            height: 22,
-            borderRadius: 11,
-            borderWidth: 2,
-            borderColor: theme.border,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginRight: 14,
-        },
-        radioSelected: {
-            borderColor: theme.electricBlue,
-            backgroundColor: theme.scheme === 'dark' ? 'rgba(109,74,255,0.15)' : '#F3EEFF',
-        },
-        radioDot: {
-            width: 10,
-            height: 10,
-            borderRadius: 5,
-            backgroundColor: theme.electricBlue,
-        },
-        reminderCopy: { flex: 1, minWidth: 0 },
-        reminderLabel: {
-            fontSize: 14,
-            fontWeight: '600',
-            color: theme.text,
-            marginBottom: 2,
-        },
-        reminderLabelActive: {
-            color: theme.electricBlue,
-            fontWeight: '700',
-        },
-        reminderSub: {
-            fontSize: 12,
-            color: theme.textSecondary,
-            lineHeight: 16,
-        },
+    // Snooze Card
+    snoozeCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderRadius: 16,
+        borderWidth: 1,
+        marginBottom: 10,
+    },
+    snoozeRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    snoozeValue: {
+        fontSize: 13,
+        fontWeight: '700',
+    },
 
-        /* Snooze */
-        snoozeRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingHorizontal: 14,
-            paddingVertical: 15,
-        },
-        snoozeIconBox: {
-            width: 38,
-            height: 38,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginRight: 12,
-            ...glassButton(theme, false, { borderRadius: 10, backgroundColor: theme.avatarBg }),
-        },
-        snoozeLabel: {
-            flex: 1,
-            fontSize: 14,
-            fontWeight: '600',
-            color: theme.text,
-        },
-        snoozeRight: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-        },
-        snoozeValue: {
-            fontSize: 13,
-            fontWeight: '600',
-            color: theme.textSecondary,
-        },
+    // Modals
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+    },
+    modalCard: {
+        width: '100%',
+        borderRadius: 20,
+        borderWidth: 1,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.30,
+        shadowRadius: 24,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 20,
+        gap: 14,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: 'rgba(128,128,128,0.15)',
+    },
+    modalIconBox: {
+        width: 48,
+        height: 48,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalTitle: {
+        fontSize: 17,
+        fontWeight: '800',
+        marginBottom: 2,
+    },
+    modalSub: {
+        fontSize: 12,
+        fontWeight: '400',
+    },
 
-        /* Modals */
-        modalOverlay: {
-            flex: 1,
-            backgroundColor: theme.glassOverlay,
-            justifyContent: 'center',
-            alignItems: 'center',
-            paddingHorizontal: 28,
-        },
-        dropdownContainer: {
-            width: '100%',
-            ...glassPanel(theme, { borderRadius: 18 }),
-            paddingVertical: 8,
-        },
-        dropdownTitle: {
-            fontSize: 14,
-            fontWeight: '800',
-            color: theme.text,
-            paddingHorizontal: 20,
-            paddingVertical: 14,
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: theme.divider,
-        },
-        dropdownRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 20,
-            paddingVertical: 15,
-        },
-        dropdownDivider: {
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: theme.divider,
-        },
-        dropdownOpt: {
-            fontSize: 14,
-            fontWeight: '600',
-            color: theme.text,
-        },
-        dropdownOptActive: {
-            color: theme.electricBlue,
-            fontWeight: '700',
-        },
+    // Snooze Modal Options
+    snoozeOptRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+    },
+    snoozeOptText: {
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    checkCircleSmall: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: '#0A66FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 
-        /* Custom reminder modal */
-        customModalCard: {
-            width: '100%',
-            ...glassPanel(theme, { borderRadius: 18 }),
-            padding: 24,
-        },
-        customModalTitle: {
-            fontSize: 17,
-            fontWeight: '800',
-            color: theme.text,
-            marginBottom: 6,
-        },
-        customModalSub: {
-            fontSize: 13,
-            color: theme.textSecondary,
-            marginBottom: 20,
-        },
-        customInputRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            ...glassInput(theme, true, { borderRadius: 14 }),
-            paddingHorizontal: 16,
-            marginBottom: 22,
-            height: 52,
-        },
-        customInput: {
-            flex: 1,
-            fontSize: 22,
-            fontWeight: '700',
-            color: theme.text,
-            paddingVertical: 0,
-        },
-        customInputUnit: {
-            fontSize: 15,
-            fontWeight: '600',
-            color: theme.textSecondary,
-        },
-        customModalButtons: {
-            flexDirection: 'row',
-            gap: 12,
-        },
-        customModalBtn: {
-            flex: 1,
-            height: 48,
-            borderRadius: 10,
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-        customModalBtnCancel: {
-            backgroundColor: theme.scheme === 'dark' ? 'rgba(100,116,139,0.16)' : '#F3F4F6',
-        },
-        customModalBtnSave: {
-            backgroundColor: theme.electricBlue,
-        },
-        customModalBtnCancelText: {
-            fontSize: 15,
-            fontWeight: '700',
-            color: theme.textSecondary,
-        },
-        customModalBtnSaveText: {
-            fontSize: 15,
-            fontWeight: '700',
-            color: '#FFFFFF',
-        },
-    });
+    // Custom Modal Inputs
+    customInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 14,
+        borderWidth: 2,
+        paddingHorizontal: 16,
+        marginHorizontal: 20,
+        marginTop: 20,
+        marginBottom: 20,
+        height: 58,
+    },
+    customInput: {
+        flex: 1,
+        fontSize: 26,
+        fontWeight: '700',
+        paddingVertical: 0,
+    },
+    customInputUnit: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    modalBtnRow: {
+        flexDirection: 'row',
+        gap: 12,
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+    },
+    modalBtn: {
+        flex: 1,
+        height: 50,
+        borderRadius: 13,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    modalBtnCancel: {
+        fontSize: 15,
+        fontWeight: '700',
+    },
+    modalBtnSave: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#FFFFFF',
+    },
+});

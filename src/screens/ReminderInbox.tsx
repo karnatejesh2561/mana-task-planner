@@ -1,11 +1,20 @@
 import React from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+    ActivityIndicator,
+    FlatList,
+    Image,
+    Platform,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import { AppTheme, useApp } from '../AppContext';
+import { useApp } from '../AppContext';
 import { assertSupabaseConfigured } from '../lib/supabase';
-import { glassButton, glassPanel } from '../theme/glass';
 
 interface ReminderInboxProps {
     onBack: () => void;
@@ -32,15 +41,31 @@ type ReminderRowRaw = {
 const formatDateTime = (iso: string) => {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleString();
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (isToday) return `Today, ${time}`;
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ` • ${time}`;
+};
+
+const STATUS_CONFIG: Record<string, { color: string; bg: string; bgDark: string; icon: string; label: string }> = {
+    pending: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', bgDark: 'rgba(245,158,11,0.20)', icon: 'time-outline', label: 'Pending' },
+    sent: { color: '#22C55E', bg: 'rgba(34,197,94,0.10)', bgDark: 'rgba(34,197,94,0.18)', icon: 'checkmark-circle-outline', label: 'Sent' },
+    failed: { color: '#EF4444', bg: 'rgba(239,68,68,0.10)', bgDark: 'rgba(239,68,68,0.18)', icon: 'close-circle-outline', label: 'Failed' },
+    cancelled: { color: '#6B7280', bg: 'rgba(107,114,128,0.10)', bgDark: 'rgba(107,114,128,0.18)', icon: 'ban-outline', label: 'Cancelled' },
 };
 
 export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
-    const { theme, user, refreshNotificationBellCount } = useApp();
-    const styles = React.useMemo(() => createStyles(theme), [theme]);
+    const { theme, colorScheme, user, refreshNotificationBellCount } = useApp();
+    const isDark = colorScheme === 'dark';
+
     const [items, setItems] = React.useState<ReminderRow[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [refreshing, setRefreshing] = React.useState(false);
+
+    const screenBg = isDark ? '#081220' : '#F0F4FF';
+    const cardBg = isDark ? '#0F1D2E' : '#FFFFFF';
+    const cardBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
 
     const loadReminders = React.useCallback(async () => {
         if (!user) {
@@ -49,7 +74,6 @@ export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
             setRefreshing(false);
             return;
         }
-
         try {
             const client = assertSupabaseConfigured();
             const { data, error } = await client
@@ -58,7 +82,6 @@ export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
                 .eq('user_id', user.id)
                 .order('scheduled_for', { ascending: false })
                 .limit(100);
-
             if (error) throw error;
             const normalized = ((data || []) as ReminderRowRaw[]).map(item => ({
                 id: item.id,
@@ -68,74 +91,179 @@ export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
             }));
             setItems(normalized);
             await refreshNotificationBellCount(user.id);
-        } catch (error) {
-            console.warn('Unable to load reminders', error);
+        } catch (err) {
+            console.warn('Unable to load reminders', err);
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
     }, [refreshNotificationBellCount, user]);
 
-    React.useEffect(() => {
-        void loadReminders();
-    }, [loadReminders]);
+    React.useEffect(() => { void loadReminders(); }, [loadReminders]);
+
+    // ── Stats bar counts
+    const counts = React.useMemo(() => ({
+        pending: items.filter(i => i.status === 'pending').length,
+        sent: items.filter(i => i.status === 'sent').length,
+        failed: items.filter(i => i.status === 'failed').length,
+        cancelled: items.filter(i => i.status === 'cancelled').length,
+    }), [items]);
 
     if (loading) {
         return (
-            <View style={styles.centerScreen}>
-                <ActivityIndicator size="small" color={theme.electricBlue} />
+            <View style={{ flex: 1, backgroundColor: screenBg, alignItems: 'center', justifyContent: 'center' }}>
+                <LinearGradient
+                    colors={isDark ? ['#081220', '#0D1825', '#132438'] : ['#F7FAFF', '#FFFFFF', '#F0F4FF']}
+                    style={StyleSheet.absoluteFill}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                />
+                <ActivityIndicator size="small" color="#0A66FF" />
             </View>
         );
     }
 
     return (
-        <View style={styles.screen}>
+        <View style={{ flex: 1, backgroundColor: screenBg }}>
+            {/* Background */}
             <LinearGradient
-                colors={[theme.bgTop, theme.bgMid, theme.bgBottom]}
-                style={StyleSheet.absoluteFillObject}
+                colors={isDark ? ['#081220', '#0D1825', '#132438'] : ['#F7FAFF', '#FFFFFF', '#F0F4FF']}
+                style={StyleSheet.absoluteFill}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
             />
+            {!isDark && (
+                <Image
+                    source={require('../../assets/background-image.png')}
+                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', opacity: 0.35 }}
+                    resizeMode="cover"
+                />
+            )}
+
+            {/* ── Header ── */}
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.82}>
-                    <Ionicons name="chevron-back" size={24} color={theme.orangeAccent} />
+                <TouchableOpacity
+                    style={[styles.backBtn, {
+                        backgroundColor: isDark ? 'rgba(10, 22, 40, 0.5)' : 'rgba(255, 255, 255, 0.45)',
+                        borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                    }]}
+                    onPress={onBack}
+                    activeOpacity={0.8}
+                >
+                    <Ionicons name="chevron-back" size={22} color={theme.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Reminders</Text>
-                <View style={styles.backButton} />
+                <View style={styles.headerCenter}>
+                    <Text style={[styles.headerTitle, { color: theme.text }]}>Reminder Inbox</Text>
+                    <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
+                        {items.length} scheduled reminder{items.length !== 1 ? 's' : ''}
+                    </Text>
+                </View>
+                <View style={styles.headerSpacer} />
             </View>
 
             <FlatList
                 data={items}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={items.length === 0 ? styles.emptyList : styles.listContent}
+                keyExtractor={item => item.id}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={[
+                    styles.listContent,
+                    items.length === 0 && styles.emptyContent,
+                ]}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
-                        onRefresh={() => {
-                            setRefreshing(true);
-                            void loadReminders();
-                        }}
-                        tintColor={theme.electricBlue}
+                        onRefresh={() => { setRefreshing(true); void loadReminders(); }}
+                        tintColor="#0A66FF"
                     />
                 }
+                ListHeaderComponent={items.length > 0 ? (
+                    // ── Stats Summary Row ──
+                    <View style={styles.statsRow}>
+                        {[
+                            { key: 'sent', count: counts.sent },
+                            { key: 'pending', count: counts.pending },
+                            { key: 'failed', count: counts.failed },
+                        ].map(({ key, count }) => {
+                            const cfg = STATUS_CONFIG[key];
+                            return (
+                                <View
+                                    key={key}
+                                    style={[
+                                        styles.statCard,
+                                        {
+                                            backgroundColor: isDark ? cfg.bgDark : cfg.bg,
+                                            borderColor: isDark ? `${cfg.color}33` : `${cfg.color}22`,
+                                        },
+                                    ]}
+                                >
+                                    <Ionicons name={cfg.icon as any} size={18} color={cfg.color} />
+                                    <Text style={[styles.statCount, { color: cfg.color }]}>{count}</Text>
+                                    <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{cfg.label}</Text>
+                                </View>
+                            );
+                        })}
+                    </View>
+                ) : null}
                 ListEmptyComponent={
                     <View style={styles.emptyWrap}>
-                        <Ionicons name="notifications-off-outline" size={28} color={theme.orangeAccent} />
-                        <Text style={styles.emptyTitle}>No reminders yet</Text>
-                        <Text style={styles.emptySub}>Create a task with due date and time to see reminders here.</Text>
+                        <View style={[styles.emptyIconBox, {
+                            backgroundColor: isDark ? 'rgba(10,102,255,0.12)' : 'rgba(10,102,255,0.08)',
+                        }]}>
+                            <Ionicons name="notifications-off-outline" size={32} color="#0A66FF" />
+                        </View>
+                        <Text style={[styles.emptyTitle, { color: theme.text }]}>No reminders yet</Text>
+                        <Text style={[styles.emptySub, { color: theme.textSecondary }]}>
+                            Create a task with due date and time{'\n'}to see reminders here.
+                        </Text>
                     </View>
                 }
                 renderItem={({ item }) => {
+                    const cfg = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.pending;
                     const title = item.tasks?.title || 'Task reminder';
-                    const dueText = item.tasks ? `${item.tasks.due_date} ${item.tasks.due_time}` : 'No task info';
+
                     return (
-                        <View style={styles.card}>
-                            <View style={styles.cardTopRow}>
-                                <Text style={styles.cardTitle} numberOfLines={1}>{title}</Text>
-                                <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
+                        <View style={[
+                            styles.card,
+                            {
+                                backgroundColor: cardBg,
+                                borderColor: cardBorder,
+                                shadowColor: isDark ? '#000' : '#0A66FF',
+                                shadowOpacity: isDark ? 0.20 : 0.06,
+                            },
+                        ]}>
+                            {/* Left accent bar */}
+                            <View style={[styles.cardAccent, { backgroundColor: cfg.color }]} />
+
+                            {/* Icon */}
+                            <View style={[styles.cardIconBox, {
+                                backgroundColor: isDark ? cfg.bgDark : cfg.bg,
+                            }]}>
+                                <Ionicons name={cfg.icon as any} size={20} color={cfg.color} />
                             </View>
-                            <Text style={styles.cardMeta}>Scheduled: {formatDateTime(item.scheduled_for)}</Text>
-                            <Text style={styles.cardMeta}>Due: {dueText}</Text>
+
+                            {/* Content */}
+                            <View style={styles.cardBody}>
+                                <Text style={[styles.cardTitle, { color: theme.text }]} numberOfLines={1}>
+                                    {title}
+                                </Text>
+                                <Text style={[styles.cardTime, { color: theme.textSecondary }]}>
+                                    {formatDateTime(item.scheduled_for)}
+                                </Text>
+                                {item.tasks && (
+                                    <Text style={[styles.cardDue, { color: theme.textSecondary }]} numberOfLines={1}>
+                                        Due {item.tasks.due_date}
+                                        {item.tasks.due_time ? ` • ${item.tasks.due_time}` : ''}
+                                    </Text>
+                                )}
+                            </View>
+
+                            {/* Status badge */}
+                            <View style={[styles.statusBadge, {
+                                backgroundColor: isDark ? cfg.bgDark : cfg.bg,
+                                borderColor: isDark ? `${cfg.color}44` : `${cfg.color}33`,
+                            }]}>
+                                <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
+                            </View>
                         </View>
                     );
                 }}
@@ -144,89 +272,149 @@ export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
     );
 };
 
-const createStyles = (theme: AppTheme) => StyleSheet.create({
-    screen: {
-        flex: 1,
-        backgroundColor: 'transparent',
-    },
-    centerScreen: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'transparent',
-    },
+const styles = StyleSheet.create({
     header: {
-        paddingTop: 56,
-        paddingBottom: 14,
-        paddingHorizontal: 16,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: 'transparent',
+        paddingTop: Platform.OS === 'ios' ? 56 : 40,
+        paddingBottom: 12,
+        paddingHorizontal: 18,
     },
-    backButton: {
-        width: 40,
-        height: 40,
+    backBtn: {
+        width: 42,
+        height: 42,
+        borderRadius: 12,
+        borderWidth: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        ...glassButton(theme, false, { borderRadius: 20 }),
+    },
+    headerCenter: {
+        flex: 1,
+        paddingLeft: 14,
     },
     headerTitle: {
-        color: theme.text,
+        fontSize: 22,
+        fontWeight: '800',
+        letterSpacing: -0.4,
+        marginBottom: 1,
+    },
+    headerSubtitle: {
+        fontSize: 12,
+        fontWeight: '400',
+    },
+    headerSpacer: { width: 42 },
+
+    listContent: {
+        paddingHorizontal: 18,
+        paddingTop: 8,
+        paddingBottom: 120,
+    },
+    emptyContent: {
+        flexGrow: 1,
+        justifyContent: 'center',
+    },
+
+    // Stats Row
+    statsRow: {
+        flexDirection: 'row',
+        gap: 10,
+        marginBottom: 18,
+    },
+    statCard: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 12,
+        borderRadius: 14,
+        borderWidth: 1,
+        gap: 4,
+    },
+    statCount: {
         fontSize: 18,
         fontWeight: '800',
     },
-    listContent: {
-        paddingHorizontal: 16,
-        paddingBottom: 24,
-        paddingTop: 8,
+    statLabel: {
+        fontSize: 11,
+        fontWeight: '600',
     },
+
+    // Reminder Card
     card: {
-        ...glassPanel(theme, { borderRadius: 18 }),
-        padding: 14,
-        marginBottom: 10,
-    },
-    cardTopRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        borderRadius: 16,
+        borderWidth: 1,
+        marginBottom: 10,
+        overflow: 'hidden',
+        shadowOffset: { width: 0, height: 3 },
+        shadowRadius: 10,
+        elevation: 3,
     },
-    cardTitle: {
-        color: theme.text,
-        fontSize: 15,
-        fontWeight: '700',
+    cardAccent: {
+        width: 4,
+        alignSelf: 'stretch',
+    },
+    cardIconBox: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: 12,
+        marginVertical: 14,
+    },
+    cardBody: {
         flex: 1,
+        marginLeft: 12,
+        marginVertical: 14,
         marginRight: 8,
     },
-    statusText: {
-        color: theme.electricBlue,
-        fontSize: 11,
-        fontWeight: '800',
+    cardTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        marginBottom: 3,
     },
-    cardMeta: {
-        marginTop: 6,
-        color: theme.textSecondary,
+    cardTime: {
         fontSize: 12,
         fontWeight: '500',
+        marginBottom: 2,
     },
-    emptyList: {
-        flexGrow: 1,
-        justifyContent: 'center',
-        paddingHorizontal: 24,
+    cardDue: {
+        fontSize: 11,
+        fontWeight: '400',
     },
-    emptyWrap: {
-        alignItems: 'center',
+    statusBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 10,
+        borderWidth: 1,
+        marginRight: 12,
     },
-    emptyTitle: {
-        marginTop: 10,
-        color: theme.text,
-        fontSize: 17,
+    statusText: {
+        fontSize: 11,
         fontWeight: '700',
     },
+
+    // Empty state
+    emptyWrap: {
+        alignItems: 'center',
+        paddingVertical: 40,
+    },
+    emptyIconBox: {
+        width: 72,
+        height: 72,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+    },
+    emptyTitle: {
+        fontSize: 18,
+        fontWeight: '800',
+        marginBottom: 8,
+    },
     emptySub: {
-        marginTop: 6,
-        color: theme.textSecondary,
         fontSize: 13,
         textAlign: 'center',
+        lineHeight: 20,
     },
 });

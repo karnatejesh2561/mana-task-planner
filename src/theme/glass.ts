@@ -12,7 +12,6 @@ export const glassShadow = (theme: AppTheme, opacity = theme.glassShadowOpacity)
   shadowOffset: { width: 0, height: GLASS_SHADOW_OFFSET_Y },
   shadowOpacity: opacity,
   shadowRadius: GLASS_SHADOW_RADIUS,
-  elevation: theme.glassElevation,
 });
 
 export const glassSurface = (

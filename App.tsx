@@ -7,12 +7,14 @@ import {
 } from 'react-native';
 import { AppProvider, useApp, AppTheme } from './src/AppContext';
 import { IPhone16Frame } from './src/components/iPhone16Frame';
+import { Sidebar } from './src/components/Sidebar';
 import { HomeDashboard } from './src/screens/HomeDashboard';
 import { CalendarSchedule } from './src/screens/CalendarSchedule';
 import { AddTask } from './src/screens/AddTask';
 import { ProfileSettings } from './src/screens/ProfileSettings';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
+import { WelcomeScreen } from './src/screens/WelcomeScreen';
 import { ForgotPasswordScreen } from './src/screens/ForgotPasswordScreen';
 import { ReminderInbox } from './src/screens/ReminderInbox';
 import LinearGradient from 'react-native-linear-gradient';
@@ -31,6 +33,9 @@ const AppContent: React.FC = () => {
     const styles = React.useMemo(() => createStyles(theme), [theme]);
     const isDesktop = windowWidth >= 1024;
 
+    // ─── Welcome Screen State ────────────────────────────────────────────────────
+    const [showWelcome, setShowWelcome] = useState(true);
+
     React.useEffect(() => {
         configureNotificationsAsync().catch(() => undefined);
     }, []);
@@ -43,6 +48,7 @@ const AppContent: React.FC = () => {
     const [showAddTaskMobile, setShowAddTaskMobile] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [taskDraft, setTaskDraft] = useState<TaskDraft | null>(null);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     const navigateToTab = (tab: any) => {
         if (tab === 'AddTask') {
@@ -80,6 +86,15 @@ const AppContent: React.FC = () => {
         setTaskDraft(null);
     };
 
+    // Show Welcome Screen
+    if (showWelcome) {
+        return (
+            <WelcomeScreen
+                onComplete={() => setShowWelcome(false)}
+            />
+        );
+    }
+
     if (!isAuthReady) {
         return (
             <LinearGradient
@@ -111,6 +126,7 @@ const AppContent: React.FC = () => {
                         onAddTaskPress={() => isShowcase ? null : openCreateTask()}
                         onTaskPress={(task) => isShowcase ? null : openEditTask(task)}
                         onBellPress={() => isShowcase ? null : setActiveTab('Notifications')}
+                        onMenuPress={() => isShowcase ? null : setSidebarOpen(true)}
                     />
                 );
             case 'Calendar':
@@ -118,6 +134,7 @@ const AppContent: React.FC = () => {
                     <CalendarSchedule
                         onBack={() => isShowcase ? null : setActiveTab('Home')}
                         onAddTaskPress={(draft) => isShowcase ? null : openCreateTask(draft)}
+                        onMenuPress={() => isShowcase ? null : setSidebarOpen(true)}
                     />
                 );
             case 'AddTask':
@@ -245,27 +262,42 @@ const AppContent: React.FC = () => {
 
                         <TouchableOpacity style={styles.tabButton} onPress={() => setActiveTab('Home')} activeOpacity={0.8}>
                             <View style={styles.inactiveTabContent}>
-                                <Ionicons name="list-outline" size={25} color={activeTab === 'Home' ? theme.electricBlue : theme.tabInactive} />
+                                <Ionicons name="list-outline" size={24} color={activeTab === 'Home' ? '#0A66FF' : theme.tabInactive} />
                                 <Text style={[styles.tabLabel, activeTab === 'Home' && styles.activeTabLabel]}>{t('tasks')}</Text>
                             </View>
+                            {activeTab === 'Home' && <View style={styles.activeIndicator} />}
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.tabButton} onPress={() => setActiveTab('Calendar')} activeOpacity={0.8}>
                             <View style={styles.inactiveTabContent}>
-                                <Ionicons name="calendar-outline" size={25} color={activeTab === 'Calendar' ? theme.electricBlue : theme.tabInactive} />
+                                <Ionicons name="calendar-outline" size={24} color={activeTab === 'Calendar' ? '#0A66FF' : theme.tabInactive} />
                                 <Text style={[styles.tabLabel, activeTab === 'Calendar' && styles.activeTabLabel]}>{t('calendar')}</Text>
                             </View>
+                            {activeTab === 'Calendar' && <View style={styles.activeIndicator} />}
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.tabButton} onPress={() => setActiveTab('Settings')} activeOpacity={0.8}>
                             <View style={styles.inactiveTabContent}>
-                                <Ionicons name="settings-outline" size={25} color={activeTab === 'Settings' ? theme.electricBlue : theme.tabInactive} />
+                                <Ionicons name="settings-outline" size={24} color={activeTab === 'Settings' ? '#0A66FF' : theme.tabInactive} />
                                 <Text style={[styles.tabLabel, activeTab === 'Settings' && styles.activeTabLabel]}>{t('settings')}</Text>
                             </View>
+                            {activeTab === 'Settings' && <View style={styles.activeIndicator} />}
                         </TouchableOpacity>
 
                     </View>
                 </View>
+
+                {/* Sidebar (renders above everything via absolute positioning) */}
+                <Sidebar
+                    visible={sidebarOpen}
+                    onClose={() => setSidebarOpen(false)}
+                    activeTab={activeTab}
+                    onNavigate={(screen) => {
+                        navigateToTab(screen);
+                        setSidebarOpen(false);
+                    }}
+                    onLogout={handleLogout}
+                />
             </View>
         </LinearGradient>
     );
@@ -302,29 +334,21 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         zIndex: 999,
     },
     tabBarWrapper: {
-        paddingHorizontal: 16,
-        paddingBottom: Platform.OS === 'ios' ? 24 : 12,
-        backgroundColor: 'transparent',
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
+        backgroundColor: theme.scheme === 'dark' ? '#081220' : '#FFFFFF',
+        borderTopWidth: 1,
+        borderTopColor: theme.scheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+        paddingBottom: Platform.OS === 'ios' ? 24 : 8,
     },
     tabBar: {
         flexDirection: 'row',
-        height: 64,
-        backgroundColor: theme.tabBarGlass,
-        borderRadius: 32,
-        borderWidth: 1,
-        borderColor: theme.glassBorderStrong,
-        paddingHorizontal: 8,
+        height: 60,
+        backgroundColor: 'transparent',
         alignItems: 'center',
         justifyContent: 'space-around',
-        shadowColor: theme.glassShadow,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: theme.scheme === 'dark' ? 0.28 : 0.16,
-        shadowRadius: 32,
-        elevation: theme.glassElevation,
     },
     tabButton: {
         flex: 1,
@@ -343,8 +367,16 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         marginTop: 4,
     },
     activeTabLabel: {
-        color: theme.electricBlue,
+        color: '#0A66FF',
         fontWeight: '700',
+    },
+    activeIndicator: {
+        position: 'absolute',
+        bottom: 0,
+        width: 32,
+        height: 3,
+        borderRadius: 1.5,
+        backgroundColor: '#0A66FF',
     },
     floatingAddWrapper: {
         width: 64,
