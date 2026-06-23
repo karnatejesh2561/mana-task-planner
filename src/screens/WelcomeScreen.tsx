@@ -40,6 +40,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                 style={styles.video}
                 resizeMode="cover"
                 repeat={false}
+                rate={2.0}
                 playInBackground={false}
                 playWhenInactive={false}
                 ignoreSilentSwitch="obey"
