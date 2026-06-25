@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session, User as AuthUser } from '@supabase/supabase-js';
 
 import { Task, Project, TaskAssignee, TaskStatus, TaskPriority } from './types';
@@ -7,7 +8,7 @@ import { mockProjects, mockAssignees } from './mockData';
 import { Language, translate } from './i18n';
 import { buildTimeSlot, formatDbTimeToDisplay, formatDisplayDate, normalizeTimeForDb, parseDisplayDateToIso } from './lib/date';
 import { assertSupabaseConfigured, supabase } from './lib/supabase';
-import { syncPushTokenToBackendAsync } from './notifications';
+import { syncPushTokenToBackendAsync, notifyTaskCreatedAsync } from './notifications';
 
 export const COLORS = {
     // Premium Brand Colors
@@ -272,6 +273,7 @@ interface AppContextType {
     colorScheme: 'light' | 'dark';
     theme: AppTheme;
     isAuthReady: boolean;
+    preferredSchemeLoaded: boolean;
     toggleTheme: () => void;
     language: Language;
     setLanguage: (language: Language) => void;
@@ -305,7 +307,7 @@ interface AppContextType {
         dueTime: string;
         timeSlot: string;
     }) => Promise<ActionResult>;
-    updateTaskStatus: (taskId: string, status: TaskStatus) => Promise<void>;
+    updateTaskStatus: (taskId: string, status: TaskStatus) => Promise<ActionResult>;
     deleteTask: (taskId: string) => Promise<void>;
     stats: {
         total: number;
@@ -320,6 +322,7 @@ interface AppContextType {
     notificationBellCount: number;
     updateNotificationSettings: (patch: Partial<NotificationSettingsState>) => Promise<ActionResult>;
     refreshNotificationBellCount: (targetUserId?: string) => Promise<void>;
+    markNotificationsAsSeen: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -404,6 +407,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const systemScheme = useColorScheme();
     const [themeOverride, setThemeOverride] = useState<'light' | 'dark' | null>(null);
     const [language, setLanguage] = useState<Language>('en');
+    const [preferredSchemeLoaded, setPreferredSchemeLoaded] = useState(false);
     const colorScheme = themeOverride ?? (systemScheme === 'dark' ? 'dark' : 'light');
     const theme = colorScheme === 'dark' ? DARK_THEME : LIGHT_THEME;
     const t = React.useCallback((key: string, params?: Record<string, string | number>) => translate(language, key, params), [language]);
@@ -418,6 +422,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [assignees] = useState<TaskAssignee[]>(mockAssignees);
 
     const isAuthenticated = user !== null;
+
+    const markNotificationsAsSeen = () => setNotificationBellCount(0);
 
     const ensureProfile = async (authUser: AuthUser) => {
         const client = assertSupabaseConfigured();
@@ -575,6 +581,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     useEffect(() => {
         if (!supabase) {
             setIsAuthReady(true);
+            setPreferredSchemeLoaded(true);
             return;
         }
 
@@ -582,6 +589,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         const bootstrap = async () => {
             try {
+                await loadPreferredScheme();
                 const client = assertSupabaseConfigured();
                 const { data, error } = await client.auth.getSession();
                 if (error) throw error;
@@ -674,6 +682,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setNotificationBellCount(0);
     };
 
+    const loadPreferredScheme = async () => {
+        try {
+            const saved = await AsyncStorage.getItem('@ManaTaskPlanner:themeScheme');
+            if (saved === 'dark' || saved === 'light') {
+                setThemeOverride(saved);
+            }
+        } catch (error) {
+            console.warn('Failed to load saved theme scheme', error);
+        } finally {
+            setPreferredSchemeLoaded(true);
+        }
+    };
+
+    const savePreferredScheme = async (scheme: 'light' | 'dark') => {
+        try {
+            await AsyncStorage.setItem('@ManaTaskPlanner:themeScheme', scheme);
+        } catch (error) {
+            console.warn('Failed to persist theme scheme', error);
+        }
+    };
+
     const updateProfile = async (profile: { name: string; email: string; about: string; password?: string; photoUri?: string }): Promise<ActionResult> => {
         if (!profile.name.trim()) return { success: false, error: t('fullNameRequired') };
         if (!isValidEmail(profile.email.trim())) return { success: false, error: t('validEmail') };
@@ -729,7 +758,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         try {
             const client = assertSupabaseConfigured();
-            const { error } = await client.from('tasks').insert({
+            const { data: insertData, error } = await client.from('tasks').insert({
                 user_id: user.id,
                 title: taskData.title.trim(),
                 description: taskData.description.trim() || null,
@@ -737,9 +766,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 due_time: dueTime,
                 time_zone: getDeviceTimeZone(),
                 status: 'pending',
-            });
+            }).select('id');
             if (error) return { success: false, error: error.message };
+            const newTaskId = Array.isArray(insertData) && insertData[0] ? insertData[0].id : (insertData as any)?.id;
             await loadTasks(user.id);
+            // Immediately notify user locally and increment bell count so dot shows up.
+            try {
+                await notifyTaskCreatedAsync({ title: taskData.title.trim(), dueDate, dueTime }, 'Task created');
+            } catch (e) {
+                // Non-fatal: continue
+                console.warn('Local notification failed', e);
+            }
+            // Optimistically increment bell count and refresh from backend.
+            setNotificationBellCount(prev => prev + 1);
             await refreshNotificationBellCount();
             return { success: true };
         } catch (error) {
@@ -781,15 +820,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
-    const updateTaskStatus = async (taskId: string, status: TaskStatus) => {
-        if (!user) return;
+    const updateTaskStatus = async (taskId: string, status: TaskStatus): Promise<ActionResult> => {
+        if (!user) return { success: false, error: t('genericError') };
         try {
             const client = assertSupabaseConfigured();
-            await client.from('tasks').update({ status: mapTaskStatusToDb(status) }).eq('id', taskId).eq('user_id', user.id);
+            const { error } = await client
+                .from('tasks')
+                .update({ status: mapTaskStatusToDb(status) })
+                .eq('id', taskId)
+                .eq('user_id', user.id);
+            if (error) return { success: false, error: error.message };
             await loadTasks(user.id);
             await refreshNotificationBellCount();
+            return { success: true };
         } catch (error) {
             console.warn('Unable to update task status', error);
+            return { success: false, error: error instanceof Error ? error.message : t('genericError') };
         }
     };
 
@@ -805,10 +851,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
-    const toggleTheme = () => setThemeOverride(prev => {
-        const current = prev ?? (systemScheme === 'dark' ? 'dark' : 'light');
-        return current === 'dark' ? 'light' : 'dark';
-    });
+    const toggleTheme = () => {
+        setThemeOverride(prev => {
+            const current = prev ?? (systemScheme === 'dark' ? 'dark' : 'light');
+            const next = current === 'dark' ? 'light' : 'dark';
+            void savePreferredScheme(next);
+            return next;
+        });
+    };
 
     const toggleLanguage = () => setLanguage(prev => (prev === 'en' ? 'te' : 'en'));
 
@@ -831,6 +881,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             colorScheme,
             theme,
             isAuthReady,
+            preferredSchemeLoaded,
             toggleTheme,
             language,
             setLanguage,
@@ -856,6 +907,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             notificationBellCount,
             updateNotificationSettings,
             refreshNotificationBellCount,
+            markNotificationsAsSeen,
         }}>
             {children}
         </AppContext.Provider>

@@ -33,7 +33,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     onBellPress,
     onMenuPress,
 }) => {
-    const { tasks, user, deleteTask, theme, colorScheme, t, notificationBellCount, refreshNotificationBellCount } = useApp();
+    const { tasks, user, deleteTask, updateTaskStatus, theme, colorScheme, t, notificationBellCount, refreshNotificationBellCount } = useApp();
 
     // Dropdown state
     const [menuTask, setMenuTask] = React.useState<Task | null>(null);
@@ -87,9 +87,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         onTaskPress?.(task);
     };
 
-    const handleAcceptTask = (task: Task) => {
+    const handleAcceptTask = async (task: Task) => {
         closeDropdown();
-        console.log('Accept task', task.id);
+        const result = await updateTaskStatus(task.id, 'Completed');
+        if (!result.success) {
+            console.warn('Unable to accept task', result.error);
+            Alert.alert(t('unableUpdateTask'), result.error || t('unableUpdateTaskMessage'));
+        }
     };
 
     return (

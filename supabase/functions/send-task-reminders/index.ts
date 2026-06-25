@@ -59,24 +59,47 @@ const sendFcmMessage = async (
   token: string,
   notification: { title: string; body: string },
   data: Record<string, string>,
+  imageUrl?: string | null,
 ) => {
-  const response = await fetch(
-    `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        ...jsonHeaders,
-      },
-      body: JSON.stringify({
-        message: {
-          token,
-          notification,
-          data,
+  const bodyPayload: any = {
+    message: {
+      token,
+      notification,
+      android: {
+        notification: {
+          channel_id: 'tasks',
+          sound: 'default',
+          default_sound: true,
+          default_vibrate_timings: true,
         },
-      }),
+        priority: 'high',
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: 'default',
+          },
+        },
+      },
+      data,
     },
-  );
+  };
+
+  if (imageUrl) {
+    // Attach image for FCM/Android notification and APNS fcm_options
+    bodyPayload.message.android.notification.image = imageUrl;
+    bodyPayload.message.notification = { ...bodyPayload.message.notification, image: imageUrl };
+    bodyPayload.message.apns.fcm_options = { image: imageUrl };
+  }
+
+  const response = await fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      ...jsonHeaders,
+    },
+    body: JSON.stringify(bodyPayload),
+  });
 
   if (!response.ok) {
     const errorBody = await response.text();
@@ -108,14 +131,38 @@ Deno.serve(async (req: Request) => {
           .catch(() => ({}))
       : {};
     const batchSize = Number(requestBody.batchSize || 50);
+    const targetTaskId = requestBody.taskId || null;
+    const forceSend = Boolean(requestBody.forceSend === true || requestBody.forceSend === 'true');
+    const providedImageUrl = requestBody.imageUrl || null;
 
-    const { data: notifications, error } = await supabase
+    // Resolve notification image URL: prefer provided, then env var, then user-provided public URL, then storage fallback.
+    const envImageUrl = Deno.env.get('NOTIFICATION_IMAGE_URL')?.trim() || null;
+    const userProvidedDefault = 'https://ztvmhrtpijevlujttegx.supabase.co/storage/v1/object/public/bucket/logo-m.svg';
+    const fallbackStorageImage = `${supabaseUrl.replace(/\/$/, '')}/storage/v1/object/public/assets/logo-m.svg`;
+    const resolvedImageUrl = providedImageUrl || envImageUrl || userProvidedDefault || fallbackStorageImage;
+
+    let query = supabase
       .from('task_notifications')
       .select('id, task_id, user_id, scheduled_for, tasks(title, due_date, due_time)')
       .eq('status', 'pending')
-      .lte('scheduled_for', new Date().toISOString())
       .order('scheduled_for', { ascending: true })
       .limit(batchSize);
+
+    if (targetTaskId) {
+      // If specific task requested, limit to that task's notification(s)
+      // Respect scheduling unless forceSend is requested.
+      query = supabase
+        .from('task_notifications')
+        .select('id, task_id, user_id, scheduled_for, tasks(title, due_date, due_time)')
+        .eq('status', 'pending')
+        .eq('task_id', targetTaskId)
+        .limit(50);
+      if (!forceSend) query = query.lte('scheduled_for', new Date().toISOString());
+    } else {
+      query = query.lte('scheduled_for', new Date().toISOString());
+    }
+
+    const { data: notifications, error } = await query;
 
     if (error) throw error;
 
@@ -154,10 +201,13 @@ Deno.serve(async (req: Request) => {
             tokenRecord.token,
             { title, body },
             {
-              taskId: item.task_id,
-              notificationId: item.id,
-              type: 'task-reminder',
-            },
+                taskId: item.task_id,
+                notificationId: item.id,
+                type: 'task-reminder',
+                dueDate: item.tasks?.due_date || '',
+                dueTime: item.tasks?.due_time || '',
+              },
+            resolvedImageUrl,
           );
           delivered += 1;
         } catch (sendError) {

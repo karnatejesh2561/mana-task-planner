@@ -113,6 +113,43 @@ begin
 end;
 $$;
 
+create or replace function public.reschedule_task_notifications_for_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  due_at timestamptz;
+begin
+  if new.default_reminder_minutes = old.default_reminder_minutes then
+    return new;
+  end if;
+
+  update public.task_notifications tn
+  set scheduled_for = make_timestamptz(
+        extract(year from t.due_date)::int,
+        extract(month from t.due_date)::int,
+        extract(day from t.due_date)::int,
+        extract(hour from t.due_time)::int,
+        extract(minute from t.due_time)::int,
+        floor(extract(second from t.due_time))::int,
+        coalesce(nullif(t.time_zone, ''), 'UTC')
+      ) - make_interval(mins => greatest(new.default_reminder_minutes, 0))
+  from public.tasks t
+  where tn.task_id = t.id
+    and tn.user_id = new.user_id
+    and tn.status = 'pending';
+
+  return new;
+end;
+$$;
+
+drop trigger if exists reschedule_task_notifications_trigger on public.user_notification_settings;
+create trigger reschedule_task_notifications_trigger
+after update of default_reminder_minutes on public.user_notification_settings
+for each row execute procedure public.reschedule_task_notifications_for_user();
+
 alter table public.user_notification_settings enable row level security;
 
 drop trigger if exists set_user_notification_settings_updated_at on public.user_notification_settings;

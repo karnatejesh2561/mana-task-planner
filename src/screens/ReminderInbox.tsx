@@ -1,6 +1,7 @@
 import React from 'react';
 import {
     ActivityIndicator,
+    Alert,
     FlatList,
     Image,
     Platform,
@@ -56,14 +57,40 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; bgDark: string;
 };
 
 export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
-    const { theme, colorScheme, user, refreshNotificationBellCount } = useApp();
+    const { theme, colorScheme, user, notificationSettings, refreshNotificationBellCount, markNotificationsAsSeen } = useApp();
     const isDark = colorScheme === 'dark';
 
     const [items, setItems] = React.useState<ReminderRow[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [refreshing, setRefreshing] = React.useState(false);
+    const [snoozingIds, setSnoozingIds] = React.useState<string[]>([]);
 
     const screenBg = isDark ? '#081220' : '#F0F4FF';
+
+    const handleSnoozeReminder = async (item: ReminderRow) => {
+        if (!user) return;
+        const snoozeMinutes = notificationSettings.snoozeMinutes;
+        const snoozedAt = new Date(Date.now() + snoozeMinutes * 60000).toISOString();
+
+        setSnoozingIds(prev => [...prev, item.id]);
+        try {
+            const client = assertSupabaseConfigured();
+            const { error } = await client
+                .from('task_notifications')
+                .update({ scheduled_for: snoozedAt, status: 'pending' })
+                .eq('id', item.id)
+                .eq('user_id', user.id);
+            if (error) throw error;
+            await loadReminders();
+            await refreshNotificationBellCount(user.id);
+            Alert.alert('Reminder Snoozed', `Snoozed for ${snoozeMinutes} minute${snoozeMinutes === 1 ? '' : 's'}.`);
+        } catch (err) {
+            console.warn('Unable to snooze reminder', err);
+            Alert.alert('Reminder Snooze Failed', 'Unable to snooze this reminder.');
+        } finally {
+            setSnoozingIds(prev => prev.filter(id => id !== item.id));
+        }
+    };
     const cardBg = isDark ? '#0F1D2E' : '#FFFFFF';
     const cardBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
 
@@ -99,7 +126,14 @@ export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
         }
     }, [refreshNotificationBellCount, user]);
 
-    React.useEffect(() => { void loadReminders(); }, [loadReminders]);
+    React.useEffect(() => {
+        const initialize = async () => {
+            await loadReminders();
+            markNotificationsAsSeen();
+        };
+
+        void initialize();
+    }, [loadReminders, markNotificationsAsSeen]);
 
     // ── Stats bar counts
     const counts = React.useMemo(() => ({
@@ -183,13 +217,14 @@ export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
                             { key: 'sent', count: counts.sent },
                             { key: 'pending', count: counts.pending },
                             { key: 'failed', count: counts.failed },
-                        ].map(({ key, count }) => {
+                        ].map(({ key, count }, index) => {
                             const cfg = STATUS_CONFIG[key];
                             return (
                                 <View
                                     key={key}
                                     style={[
                                         styles.statCard,
+                                        index < 2 && styles.statCardSpacing,
                                         {
                                             backgroundColor: isDark ? cfg.bgDark : cfg.bg,
                                             borderColor: isDark ? `${cfg.color}33` : `${cfg.color}22`,
@@ -243,7 +278,7 @@ export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
 
                             {/* Content */}
                             <View style={styles.cardBody}>
-                                <Text style={[styles.cardTitle, { color: theme.text }]} numberOfLines={1}>
+                                <Text style={[styles.cardTitle, { color: theme.text }]} numberOfLines={2}>
                                     {title}
                                 </Text>
                                 <Text style={[styles.cardTime, { color: theme.textSecondary }]}>
@@ -257,12 +292,15 @@ export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
                                 )}
                             </View>
 
-                            {/* Status badge */}
-                            <View style={[styles.statusBadge, {
-                                backgroundColor: isDark ? cfg.bgDark : cfg.bg,
-                                borderColor: isDark ? `${cfg.color}44` : `${cfg.color}33`,
-                            }]}>
-                                <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
+                            {/* Footer: status badge left, actions right */}
+                            <View style={styles.cardFooter}>
+                                <View style={[styles.statusBadge, {
+                                    backgroundColor: isDark ? cfg.bgDark : cfg.bg,
+                                    borderColor: isDark ? `${cfg.color}44` : `${cfg.color}33`,
+                                }]}>
+                                    <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
+                                </View>
+
                             </View>
                         </View>
                     );
@@ -317,7 +355,6 @@ const styles = StyleSheet.create({
     // Stats Row
     statsRow: {
         flexDirection: 'row',
-        gap: 10,
         marginBottom: 18,
     },
     statCard: {
@@ -326,7 +363,9 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         borderRadius: 14,
         borderWidth: 1,
-        gap: 4,
+    },
+    statCardSpacing: {
+        marginRight: 10,
     },
     statCount: {
         fontSize: 18,
@@ -360,12 +399,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginLeft: 12,
-        marginVertical: 14,
+        marginVertical: 12,
     },
     cardBody: {
         flex: 1,
+        minWidth: 0,
         marginLeft: 12,
-        marginVertical: 14,
+        marginVertical: 12,
         marginRight: 8,
     },
     cardTitle: {
@@ -388,16 +428,54 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         borderWidth: 1,
         marginRight: 12,
+        flexShrink: 0,
+        alignSelf: 'center',
     },
     statusText: {
         fontSize: 11,
         fontWeight: '700',
     },
 
+    cardActions: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        marginRight: 12,
+        flexShrink: 0,
+        alignSelf: 'center',
+    },
+    actionButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 14,
+        backgroundColor: '#0A66FF',
+    },
+    actionButtonDisabled: {
+        opacity: 0.65,
+    },
+    actionButtonText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        marginLeft: 8,
+    },
+
     // Empty state
     emptyWrap: {
         alignItems: 'center',
         paddingVertical: 40,
+    },
+
+    // Card footer (status + actions)
+    cardFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 14,
+        paddingBottom: 12,
+        paddingTop: 4,
     },
     emptyIconBox: {
         width: 72,

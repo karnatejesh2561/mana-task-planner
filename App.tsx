@@ -20,7 +20,8 @@ import { ReminderInbox } from './src/screens/ReminderInbox';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Task } from './src/types';
-import { configureNotificationsAsync } from './src/notifications';
+import { configureNotificationsAsync, requestNotificationPermissionAsync, syncPushTokenToBackendAsync } from './src/notifications';
+import notifee, { AndroidStyle } from '@notifee/react-native';
 import { glassButton, glassPanel } from './src/theme/glass';
 
 type AuthScreen = 'Login' | 'Register' | 'ForgotPassword';
@@ -29,7 +30,7 @@ type TaskDraft = { dueDate?: string; dueTime?: string };
 
 const AppContent: React.FC = () => {
     const { width: windowWidth } = useWindowDimensions();
-    const { isAuthenticated, isAuthReady, logout, theme, colorScheme, t } = useApp();
+    const { isAuthenticated, isAuthReady, preferredSchemeLoaded, logout, theme, colorScheme, t, markNotificationsAsSeen, user } = useApp();
     const styles = React.useMemo(() => createStyles(theme), [theme]);
     const isDesktop = windowWidth >= 1024;
 
@@ -37,8 +38,85 @@ const AppContent: React.FC = () => {
     const [showWelcome, setShowWelcome] = useState(true);
 
     React.useEffect(() => {
-        configureNotificationsAsync().catch(() => undefined);
-    }, []);
+        const initNotifications = async () => {
+            await configureNotificationsAsync();
+            const granted = await requestNotificationPermissionAsync();
+            if (!granted) {
+                console.warn('Notification permission not granted');
+            }
+
+            try {
+                const messagingModule = await import('@react-native-firebase/messaging');
+                const messaging = messagingModule.default ?? messagingModule;
+                if (typeof messaging().registerDeviceForRemoteMessages === 'function') {
+                    await messaging().registerDeviceForRemoteMessages();
+                }
+            } catch (e) {
+                console.warn('Remote message registration failed', e);
+            }
+        };
+
+        void initNotifications();
+
+        let unsubscribe: (() => void) | undefined;
+        let tokenRefreshUnsubscribe: (() => void) | undefined;
+
+        const registerForegroundMessaging = async () => {
+            try {
+                const messagingModule = await import('@react-native-firebase/messaging');
+                const messaging = messagingModule.default ?? messagingModule;
+
+                unsubscribe = messaging().onMessage(async remoteMessage => {
+                    try {
+                        const notification = remoteMessage.notification || {};
+                        const data = remoteMessage.data || {};
+                        const title = String(notification.title || data.title || 'Task reminder');
+                        const body = String(notification.body || data.body || `${data.taskTitle || 'You have a task'} at ${data.dueTime || ''}`);
+                        const rawImage = notification.image || data.image || data.imageUrl;
+                        const image = typeof rawImage === 'string' ? rawImage : rawImage ? String(rawImage) : undefined;
+
+                        await notifee.displayNotification({
+                            title,
+                            body,
+                            android: {
+                                channelId: 'tasks',
+                                largeIcon: image || undefined,
+                                style: image ? { type: AndroidStyle.BIGPICTURE, picture: image } : undefined,
+                                sound: 'default',
+                            },
+                            ios: {
+                                sound: 'default',
+                                attachments: image ? [{ url: image }] : undefined,
+                            },
+                            data,
+                        });
+                    } catch (e) {
+                        console.warn('Foreground message handling failed', e);
+                    }
+                });
+
+                if (typeof messaging().onTokenRefresh === 'function') {
+                    tokenRefreshUnsubscribe = messaging().onTokenRefresh(async refreshedToken => {
+                        if (!user?.id) return;
+                        try {
+                            await syncPushTokenToBackendAsync(user.id);
+                        } catch (e) {
+                            console.warn('Token refresh sync failed', e);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn('FCM foreground handler not registered (firebase not ready)', e?.message || e);
+            }
+        };
+
+        void registerForegroundMessaging();
+
+        return () => {
+            unsubscribe?.();
+            tokenRefreshUnsubscribe?.();
+        };
+    }, [user]);
 
     // ─── Auth Navigation ────────────────────────────────────────────────────────
     const [authScreen, setAuthScreen] = useState<AuthScreen>('Login');
@@ -57,6 +135,11 @@ const AppContent: React.FC = () => {
             setShowAddTaskMobile(true);
         }
         else setActiveTab(tab as AppTab);
+    };
+
+    const activateNotificationTab = () => {
+        markNotificationsAsSeen();
+        setActiveTab('Notifications');
     };
 
     const openCreateTask = (draft?: TaskDraft) => {
@@ -85,6 +168,15 @@ const AppContent: React.FC = () => {
         setEditingTask(null);
         setTaskDraft(null);
     };
+
+    // Wait for saved theme before rendering welcome animation.
+    if (!preferredSchemeLoaded) {
+        return (
+            <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+                <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+            </View>
+        );
+    }
 
     // Show Welcome Screen
     if (showWelcome) {
@@ -125,7 +217,7 @@ const AppContent: React.FC = () => {
                         onNavigate={navigateToTab}
                         onAddTaskPress={() => isShowcase ? null : openCreateTask()}
                         onTaskPress={(task) => isShowcase ? null : openEditTask(task)}
-                        onBellPress={() => isShowcase ? null : setActiveTab('Notifications')}
+                        onBellPress={() => isShowcase ? null : activateNotificationTab()}
                         onMenuPress={() => isShowcase ? null : setSidebarOpen(true)}
                     />
                 );
@@ -163,7 +255,7 @@ const AppContent: React.FC = () => {
                         onNavigate={navigateToTab}
                         onAddTaskPress={openCreateTask}
                         onTaskPress={openEditTask}
-                        onBellPress={() => setActiveTab('Notifications')}
+                        onBellPress={() => activateNotificationTab()}
                     />
                 );
         }

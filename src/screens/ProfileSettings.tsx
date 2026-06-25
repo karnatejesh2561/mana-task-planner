@@ -17,6 +17,7 @@ import { AppTheme, useApp } from '../AppContext';
 import { LANGUAGE_LABELS } from '../i18n';
 import { NotificationSettings } from './NotificationSettings';
 import { DefaultReminder } from './DefaultReminder';
+import { PrivacyPolicy } from './PrivacyPolicy';
 import { glassButton, glassInput, glassSurface, glowShadow } from '../theme/glass';
 
 interface ProfileSettingsProps {
@@ -24,7 +25,7 @@ interface ProfileSettingsProps {
     onLogout?: () => void;
 }
 
-type ProfileMode = 'settings' | 'details' | 'edit' | 'notifications' | 'defaultReminder';
+type ProfileMode = 'settings' | 'details' | 'edit' | 'notifications' | 'defaultReminder' | 'privacy';
 
 const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=240&h=240&fit=crop&q=90';
 const MAX_ABOUT = 120;
@@ -194,6 +195,10 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onNavigate, on
                 }}
             />
         );
+    }
+
+    if (mode === 'privacy') {
+        return <PrivacyPolicy onBack={() => setMode('settings')} />;
     }
 
     if (mode === 'defaultReminder') {
@@ -473,9 +478,9 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onNavigate, on
                     iconName="shield-outline"
                     iconColor="#8B5CF6"
                     iconBg={isDark ? 'rgba(139,92,246,0.18)' : 'rgba(139,92,246,0.10)'}
-                    title="Privacy Policy"
-                    subtitle="Read our privacy policy"
-                    onPress={() => Alert.alert(t('privacyPolicy'), t('privacyDetailsSoon'))}
+                    title={t('privacyPolicy')}
+                    subtitle={t('privacyPolicySubtitle')}
+                    onPress={() => setMode('privacy')}
                     theme={theme}
                 />
 

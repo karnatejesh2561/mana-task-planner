@@ -1,0 +1,25 @@
+name: Run scheduled task reminders
+
+on:
+  schedule:
+    - cron: '*/5 * * * *' # every 5 minutes
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Supabase edge function to send task reminders
+        env:
+          FUNCTION_URL: ${{ secrets.SUPABASE_SEND_TASK_REMINDERS_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$FUNCTION_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Missing secrets SUPABASE_SEND_TASK_REMINDERS_URL or CRON_SECRET";
+            exit 1;
+          fi
+
+          echo "Calling send-task-reminders..."
+          curl -s -X POST "$FUNCTION_URL" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -d '{"batchSize":50}'
