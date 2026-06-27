@@ -68,7 +68,7 @@ const sendFcmMessage = async (
       android: {
         notification: {
           channel_id: 'tasks',
-          sound: 'default',
+          sound: 'notification',
           default_sound: true,
           default_vibrate_timings: true,
         },
@@ -77,7 +77,7 @@ const sendFcmMessage = async (
       apns: {
         payload: {
           aps: {
-            sound: 'default',
+            sound: 'notification',
           },
         },
       },

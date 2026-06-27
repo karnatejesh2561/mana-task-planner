@@ -9,6 +9,7 @@ import { glassButton, glassPanel } from '../theme/glass';
 interface CalendarScheduleProps {
     onBack: () => void;
     onAddTaskPress: (draft?: { dueDate: string; dueTime: string }) => void;
+    onTaskPress?: (task: Task) => void;
     onMenuPress?: () => void;
 }
 
@@ -121,7 +122,7 @@ const getInitialDate = (tasks: Task[]) => {
     return datedTask || startOfDay(new Date());
 };
 
-export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({ onAddTaskPress, onMenuPress }) => {
+export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({ onAddTaskPress, onTaskPress, onMenuPress }) => {
     const { tasks, theme, language, t } = useApp();
     const styles = React.useMemo(() => createStyles(theme), [theme]);
     const isDark = theme.scheme === 'dark';
@@ -330,7 +331,7 @@ export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({ onAddTaskPre
                                 key={item.task.id}
                                 style={[styles.eventCard, { top, height, backgroundColor: item.bg, borderWidth: 2, borderLeftWidth: 4, borderLeftColor: item.borderLeftColor, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}
                                 activeOpacity={0.82}
-                                onPress={() => openCreateForTime(item.start)}
+                                onPress={() => onTaskPress ? onTaskPress(item.task) : openCreateForTime(item.start)}
                             >
                                 <Text style={[styles.eventTitle, { color: item.titleColor }]} numberOfLines={1}>
                                     {item.task.title}

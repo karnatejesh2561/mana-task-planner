@@ -8,7 +8,7 @@ import { mockProjects, mockAssignees } from './mockData';
 import { Language, translate } from './i18n';
 import { buildTimeSlot, formatDbTimeToDisplay, formatDisplayDate, normalizeTimeForDb, parseDisplayDateToIso } from './lib/date';
 import { assertSupabaseConfigured, supabase } from './lib/supabase';
-import { syncPushTokenToBackendAsync, notifyTaskCreatedAsync } from './notifications';
+import { cancelScheduledReminderAsync, scheduleTaskReminderAsync, syncPushTokenToBackendAsync, notifyTaskCreatedAsync, notifyTaskDeletedAsync, notifyTaskCompletedAsync } from './notifications';
 
 export const COLORS = {
     // Premium Brand Colors
@@ -309,6 +309,7 @@ interface AppContextType {
     }) => Promise<ActionResult>;
     updateTaskStatus: (taskId: string, status: TaskStatus) => Promise<ActionResult>;
     deleteTask: (taskId: string) => Promise<void>;
+    loadTasks: (userId: string) => Promise<void>;
     stats: {
         total: number;
         completed: number;
@@ -770,11 +771,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             if (error) return { success: false, error: error.message };
             const newTaskId = Array.isArray(insertData) && insertData[0] ? insertData[0].id : (insertData as any)?.id;
             await loadTasks(user.id);
-            // Immediately notify user locally and increment bell count so dot shows up.
+            // Immediately notify user locally and schedule a local reminder for testing.
             try {
-                await notifyTaskCreatedAsync({ title: taskData.title.trim(), dueDate, dueTime }, 'Task created');
+                await notifyTaskCreatedAsync(
+                    { title: taskData.title.trim(), dueDate, dueTime },
+                    `Task created: ${taskData.title.trim()} on ${taskData.dueDate} at ${taskData.dueTime}`,
+                );
+                if (newTaskId) {
+                    await scheduleTaskReminderAsync(
+                        { id: newTaskId, title: taskData.title.trim(), dueDate, dueTime },
+                        `Task due soon: ${taskData.title.trim()} at ${taskData.dueTime}`,
+                        notificationSettings.defaultReminderMinutes,
+                    );
+                    try {
+                        const inspectClient = assertSupabaseConfigured();
+                        const { data: tnData } = await inspectClient
+                            .from('task_notifications')
+                            .select('scheduled_for, status')
+                            .eq('task_id', newTaskId)
+                            .maybeSingle();
+                        console.log('Created task_notifications row for', newTaskId, tnData);
+                    } catch (e) {
+                        console.warn('Unable to read task_notifications for', newTaskId, e);
+                    }
+                }
             } catch (e) {
-                // Non-fatal: continue
                 console.warn('Local notification failed', e);
             }
             // Optimistically increment bell count and refresh from backend.
@@ -813,6 +834,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 .eq('user_id', user.id);
             if (error) return { success: false, error: error.message };
             await loadTasks(user.id);
+            await scheduleTaskReminderAsync(
+                { id: taskId, title: taskData.title.trim(), dueDate, dueTime },
+                `Task due soon: ${taskData.title.trim()} at ${taskData.dueTime}`,
+                notificationSettings.defaultReminderMinutes,
+            );
+            try {
+                const inspectClient = assertSupabaseConfigured();
+                const { data: tnData } = await inspectClient
+                    .from('task_notifications')
+                    .select('scheduled_for, status')
+                    .eq('task_id', taskId)
+                    .maybeSingle();
+                console.log('Updated task_notifications row for', taskId, tnData);
+            } catch (e) {
+                console.warn('Unable to read task_notifications for', taskId, e);
+            }
             await refreshNotificationBellCount();
             return { success: true };
         } catch (error) {
@@ -822,6 +859,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const updateTaskStatus = async (taskId: string, status: TaskStatus): Promise<ActionResult> => {
         if (!user) return { success: false, error: t('genericError') };
+        const existingTask = tasks.find(task => task.id === taskId);
         try {
             const client = assertSupabaseConfigured();
             const { error } = await client
@@ -832,6 +870,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             if (error) return { success: false, error: error.message };
             await loadTasks(user.id);
             await refreshNotificationBellCount();
+
+            if (status === 'Completed' && existingTask) {
+                await cancelScheduledReminderAsync(taskId);
+                try {
+                    await notifyTaskCompletedAsync(
+                        { title: existingTask.title, dueDate: existingTask.dueDate, dueTime: existingTask.dueTime },
+                        `Task completed: ${existingTask.title}`,
+                    );
+                } catch (e) {
+                    console.warn('Local completion notification failed', e);
+                }
+            }
+
             return { success: true };
         } catch (error) {
             console.warn('Unable to update task status', error);
@@ -842,10 +893,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const deleteTask = async (taskId: string) => {
         if (!user) return;
         try {
+            const existingTask = tasks.find(task => task.id === taskId);
             const client = assertSupabaseConfigured();
             await client.from('tasks').delete().eq('id', taskId).eq('user_id', user.id);
             await loadTasks(user.id);
+            await cancelScheduledReminderAsync(taskId);
             await refreshNotificationBellCount();
+
+            if (existingTask) {
+                try {
+                    await notifyTaskDeletedAsync(
+                        { title: existingTask.title, dueDate: existingTask.dueDate, dueTime: existingTask.dueTime },
+                        `Task deleted: ${existingTask.title}`,
+                    );
+                } catch (e) {
+                    console.warn('Local delete notification failed', e);
+                }
+            }
         } catch (error) {
             console.warn('Unable to delete task', error);
         }
@@ -906,6 +970,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             notificationSettingsReady,
             notificationBellCount,
             updateNotificationSettings,
+            loadTasks,
             refreshNotificationBellCount,
             markNotificationsAsSeen,
         }}>

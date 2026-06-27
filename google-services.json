@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "727341935500",
+    "project_id": "manataskplanner",
+    "storage_bucket": "manataskplanner.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:727341935500:android:bcb9c074a7cd19cbb744a9",
+        "android_client_info": {
+          "package_name": "com.manataskplanner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDIWfprh-UmfN26yTdK9BzZsQPv8ewjau4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

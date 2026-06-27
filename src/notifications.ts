@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import notifee, { AndroidImportance, AuthorizationStatus } from '@notifee/react-native';
+import notifee, { AndroidImportance, AuthorizationStatus, TriggerType, TimestampTrigger } from '@notifee/react-native';
 
 import { supabase } from './lib/supabase';
 
@@ -21,8 +21,7 @@ export const configureNotificationsAsync = async () => {
       id: 'tasks',
       name: 'Task updates',
       importance: AndroidImportance.HIGH,
-      lightColor: '#FF0000',
-      sound: 'default',
+      sound: 'notification',
     });
   }
 };
@@ -38,28 +37,278 @@ export const requestNotificationPermissionAsync = async () => {
 
 export const notifyTaskCreatedAsync = async (task: TaskNotificationPayload, body: string) => {
   const allowed = await requestNotificationPermissionAsync();
-  if (!allowed) return false;
+  if (!allowed) {
+    console.warn('Notification permission denied for task creation');
+    return false;
+  }
 
-  await notifee.displayNotification({
-    title: task.title,
-    body,
-    data: {
-      type: 'task-created',
-      task: JSON.stringify(task),
-    },
-    android: {
-      channelId: 'tasks',
-      pressAction: {
-        id: 'default',
+  try {
+    await notifee.displayNotification({
+      title: task.title,
+      body,
+      data: {
+        type: 'task-created',
+        task: JSON.stringify(task),
       },
-      sound: 'default',
-    },
-    ios: {
-      sound: 'default',
-    },
-  });
+      android: {
+        channelId: 'tasks',
+        pressAction: {
+          id: 'default',
+        },
+        sound: 'notification',
+        smallIcon: 'ic_notification',
+        largeIcon: 'ic_notification',
+      },
+      ios: {
+        sound: 'notification',
+      },
+    });
+    console.log('Local task-created notification displayed', task.title);
+    return true;
+  } catch (error) {
+    console.warn('Local task-created notification failed', error);
+    return false;
+  }
+};
 
-  return true;
+export const notifyTaskDeletedAsync = async (task: TaskNotificationPayload, body: string) => {
+  const allowed = await requestNotificationPermissionAsync();
+  if (!allowed) {
+    console.warn('Notification permission denied for task deletion');
+    return false;
+  }
+
+  try {
+    await notifee.displayNotification({
+      title: task.title,
+      body,
+      data: {
+        type: 'task-deleted',
+        task: JSON.stringify(task),
+      },
+      android: {
+        channelId: 'tasks',
+        pressAction: {
+          id: 'default',
+        },
+        sound: 'notification',
+        smallIcon: 'ic_notification',   
+      },
+      ios: {
+        sound: 'notification',
+      },
+    });
+    console.log('Local task-deleted notification displayed', task.title);
+    return true;
+  } catch (error) {
+    console.warn('Local task-deleted notification failed', error);
+    return false;
+  }
+};
+
+export const notifyTaskCompletedAsync = async (task: TaskNotificationPayload, body: string) => {
+  const allowed = await requestNotificationPermissionAsync();
+  if (!allowed) {
+    console.warn('Notification permission denied for task completion');
+    return false;
+  }
+
+  try {
+    await notifee.displayNotification({
+      title: task.title,
+      body,
+      data: {
+        type: 'task-completed',
+        task: JSON.stringify(task),
+      },
+      android: {
+        channelId: 'tasks',
+        pressAction: {
+          id: 'default',
+        },
+        sound: 'notification',
+        smallIcon: 'ic_notification',
+      },
+      ios: {
+        sound: 'notification',
+      },
+    });
+    console.log('Local task-completed notification displayed', task.title);
+    return true;
+  } catch (error) {
+    console.warn('Local task-completed notification failed', error);
+    return false;
+  }
+};
+
+const parseLocalDateTimeToTimestamp = (dueDate: string | undefined, dueTime: string | undefined) => {
+  if (!dueDate || !dueTime) return null;
+
+  const [year, month, day] = dueDate.split('-').map(Number);
+  const [hour, minute, second = 0] = dueTime.split(':').map(Number);
+  if ([year, month, day, hour, minute].some(value => Number.isNaN(value))) return null;
+
+  const localDate = new Date(year, month - 1, day, hour, minute, second);
+  if (Number.isNaN(localDate.getTime())) return null;
+  return localDate.getTime();
+};
+
+const getScheduledTimestamp = (dueDate: string | undefined, dueTime: string | undefined, reminderMinutes: number) => {
+  const baseTimestamp = parseLocalDateTimeToTimestamp(dueDate, dueTime);
+  if (!baseTimestamp) return null;
+  const timestamp = baseTimestamp - Math.max(reminderMinutes, 0) * 60000;
+  return Number.isFinite(timestamp) ? timestamp : null;
+};
+
+const getReminderNotificationId = (taskId: string) => `${taskId}-reminder`;
+const getDueNotificationId = (taskId: string) => `${taskId}-due`;
+
+export const acceptTaskNotificationAsync = async (taskId: string) => {
+  if (!taskId || !supabase) return false;
+  try {
+    const { error } = await supabase
+      .from('tasks')
+      .update({ status: 'completed' })
+      .eq('id', taskId)
+      .eq('status', 'pending');
+
+    if (error) {
+      console.warn('Accept task notification failed', error.message);
+      return false;
+    }
+
+    await notifee.cancelNotification(getDueNotificationId(taskId));
+    await notifee.cancelNotification(getReminderNotificationId(taskId));
+    await notifee.cancelNotification(taskId);
+    return true;
+  } catch (error) {
+    console.warn('Accept task notification failed', error);
+    return false;
+  }
+};
+
+export const cancelScheduledReminderAsync = async (taskId: string) => {
+  try {
+    await notifee.cancelNotification(getDueNotificationId(taskId));
+    await notifee.cancelNotification(getReminderNotificationId(taskId));
+    await notifee.cancelNotification(taskId);
+    return true;
+  } catch (error) {
+    console.warn('Cancel scheduled reminder failed', error);
+    return false;
+  }
+};
+
+export const scheduleTaskReminderAsync = async (
+  task: TaskNotificationPayload & { id: string },
+  body: string,
+  reminderMinutes: number,
+) => {
+  const allowed = await requestNotificationPermissionAsync();
+  if (!allowed) {
+    console.warn('Notification permission not granted — skipping local Notifee scheduling for', task.id);
+    return false;
+  }
+
+  const reminderTimestamp = getScheduledTimestamp(task.dueDate, task.dueTime, reminderMinutes);
+  const dueTimestamp = parseLocalDateTimeToTimestamp(task.dueDate, task.dueTime);
+  const now = Date.now();
+
+  console.log('Scheduling reminder:', { taskId: task.id, dueDate: task.dueDate, dueTime: task.dueTime, reminderMinutes, reminderTimestamp: reminderTimestamp ? new Date(reminderTimestamp).toISOString() : null, dueTimestamp: dueTimestamp ? new Date(dueTimestamp).toISOString() : null, now: new Date(now).toISOString() });
+
+  if ((!reminderTimestamp || reminderTimestamp <= now) && (!dueTimestamp || dueTimestamp <= now)) {
+    console.warn('Not scheduling: reminder and due timestamps are in the past or invalid for task', task.id);
+    return false;
+  }
+
+  try {
+    await notifee.cancelNotification(getDueNotificationId(task.id));
+    await notifee.cancelNotification(getReminderNotificationId(task.id));
+    await notifee.cancelNotification(task.id);
+
+    if (reminderTimestamp && reminderTimestamp > now) {
+      const reminderTrigger: TimestampTrigger = {
+        type: TriggerType.TIMESTAMP,
+        timestamp: reminderTimestamp,
+        alarmManager: true,
+      };
+
+      await notifee.createTriggerNotification(
+        {
+          id: getReminderNotificationId(task.id),
+          title: task.title,
+          body,
+          data: {
+            type: 'task-reminder',
+            taskId: task.id,
+            dueDate: task.dueDate || '',
+            dueTime: task.dueTime || '',
+          },
+          android: {
+            channelId: 'tasks',
+            pressAction: {
+              id: 'default',
+            },
+            sound: 'default',
+            smallIcon: 'ic_notification',
+          },
+          ios: {
+            sound: 'default',
+          },
+        },
+        reminderTrigger,
+      );
+
+      console.log('Scheduled task reminder', getReminderNotificationId(task.id), new Date(reminderTimestamp).toISOString());
+    }
+
+    if (dueTimestamp && dueTimestamp > now) {
+      const dueTrigger: TimestampTrigger = {
+        type: TriggerType.TIMESTAMP,
+        timestamp: dueTimestamp,
+        alarmManager: true,
+      };
+
+      await notifee.createTriggerNotification(
+        {
+          id: getDueNotificationId(task.id),
+          title: task.title,
+          body: `Your task is due at ${task.dueTime || ''}. Tap Accept to complete.`,
+          data: {
+            type: 'task-due',
+            taskId: task.id,
+            dueDate: task.dueDate || '',
+            dueTime: task.dueTime || '',
+          },
+          android: {
+            channelId: 'tasks',
+            pressAction: {
+              id: 'default',
+            },
+            actions: [{
+              title: 'Accept',
+              pressAction: {
+                id: 'accept',
+              },
+            }],
+            sound: 'default',
+            smallIcon: 'ic_notification',
+          },
+          ios: {
+            sound: 'default',
+          },
+        },
+        dueTrigger,
+      );
+
+      console.log('Scheduled task due notification', getDueNotificationId(task.id), new Date(dueTimestamp).toISOString());
+    }
+
+    return true;
+  } catch (error) {
+    console.warn('Schedule task reminder failed', error);
+    return false;
+  }
 };
 
 // Small helper to increment bell count on create via AppContext. Kept here to centralize notification behavior.
@@ -87,6 +336,7 @@ export const getPushTokenForBackendAsync = async () => {
     }
 
     const token = await messaging().getToken();
+    console.log('Fetched FCM token for backend sync:', token ? token.substring(0, 8) + '...' : null);
     return token;
   } catch (e) {
     console.warn('FCM token fetch failed', e);
@@ -119,5 +369,6 @@ export const syncPushTokenToBackendAsync = async (userId: string) => {
     return false;
   }
 
+  console.log('FCM token synced to backend for user', userId);
   return true;
 };

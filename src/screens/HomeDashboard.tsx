@@ -1,10 +1,12 @@
 import React from 'react';
 import {
     Alert,
+    Animated,
     Dimensions,
     Image,
     Modal,
     Platform,
+    PanResponder,
     ScrollView,
     StyleSheet,
     Text,
@@ -16,8 +18,9 @@ import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useApp } from '../AppContext';
 import { Task } from '../types';
+import { parseDisplayDateToIso } from '../lib/date';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 interface HomeDashboardProps {
     onNavigate: (screen: string) => void;
@@ -43,10 +46,36 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
     const isDark = colorScheme === 'dark';
 
+    const initialFabY = height - 56 - 90;
+    const fabPosition = React.useRef(new Animated.ValueXY({ x: width - 78, y: initialFabY })).current;
+    const fabOffset = React.useRef({ x: width - 78, y: initialFabY });
+    const fabPanResponder = React.useRef(PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: () => {
+            fabPosition.setOffset(fabOffset.current);
+            fabPosition.setValue({ x: 0, y: 0 });
+        },
+        onPanResponderMove: Animated.event(
+            [null, { dx: fabPosition.x, dy: fabPosition.y }],
+            { useNativeDriver: false },
+        ),
+        onPanResponderRelease: (_, gestureState) => {
+            fabPosition.flattenOffset();
+            let newX = fabOffset.current.x + gestureState.dx;
+            let newY = fabOffset.current.y + gestureState.dy;
+            newX = Math.max(12, Math.min(newX, width - 56 - 12));
+            newY = Math.max(Platform.OS === 'ios' ? 56 : 40, newY);
+            fabOffset.current = { x: newX, y: newY };
+            fabPosition.setValue(fabOffset.current);
+        },
+    })).current;
+
     const completedCount = tasks.filter(t => t.status === 'Completed').length;
     const pendingCount = tasks.filter(t => t.status !== 'Completed').length;
     const totalCount = tasks.length;
-    const listTasks = tasks.filter(t => !t.id.startsWith('c-')).slice(0, 5);
+    const todayDate = new Date().toISOString().split('T')[0];
+    const listTasks = tasks.filter(t => !t.id.startsWith('c-') && parseDisplayDateToIso(t.dueDate) === todayDate);
     const firstName = user?.name?.split(' ')[0] || 'User';
     const hour = new Date().getHours();
 
@@ -294,20 +323,25 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             </ScrollView>
 
             {/* ── FAB ── */}
-            <TouchableOpacity
-                style={styles.fab}
-                onPress={onAddTaskPress}
-                activeOpacity={0.85}
+            <Animated.View
+                style={[styles.fab, { transform: fabPosition.getTranslateTransform() }]}
+                {...fabPanResponder.panHandlers}
             >
-                <LinearGradient
-                    colors={['#0A66FF', '#FF6B00']}
-                    style={styles.fabGrad}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                <TouchableOpacity
+                    style={styles.fabTouchable}
+                    onPress={onAddTaskPress}
+                    activeOpacity={0.85}
                 >
-                    <Ionicons name="add" size={28} color="#FFFFFF" />
-                </LinearGradient>
-            </TouchableOpacity>
+                    <LinearGradient
+                        colors={['#0A66FF', '#FF6B00']}
+                        style={styles.fabGrad}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                    >
+                        <Ionicons name="add" size={28} color="#FFFFFF" />
+                    </LinearGradient>
+                </TouchableOpacity>
+            </Animated.View>
 
             {/* ── Dropdown Modal (fixes z-index) ── */}
             <Modal
@@ -578,8 +612,6 @@ const styles = StyleSheet.create({
     // FAB
     fab: {
         position: 'absolute',
-        right: 22,
-        bottom: 100,
         width: 56,
         height: 56,
         borderRadius: 30,
@@ -589,6 +621,13 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.40,
         shadowRadius: 12,
         elevation: 8,
+    },
+    fabTouchable: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+        borderRadius: 30,
+        overflow: 'hidden',
     },
     fabGrad: {
         flex: 1,

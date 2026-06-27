@@ -25,13 +25,12 @@ try {
                 body: String(body),
                 android: {
                     channelId: 'tasks',
-                    largeIcon: image || undefined,
-                    style: image ? { type: 'bigPicture', picture: String(image) } : undefined,
-                    sound: 'default',
+                    sound: 'notification',
+                    smallIcon: 'ic_notification',
+                    largeIcon: 'ic_notification',
                 },
                 ios: {
-                    sound: 'default',
-                    attachments: image ? [{ url: String(image) }] : undefined,
+                    sound: 'notification',
                 },
                 data,
             });

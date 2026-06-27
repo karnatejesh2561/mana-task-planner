@@ -20,8 +20,8 @@ import { ReminderInbox } from './src/screens/ReminderInbox';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Task } from './src/types';
-import { configureNotificationsAsync, requestNotificationPermissionAsync, syncPushTokenToBackendAsync } from './src/notifications';
-import notifee, { AndroidStyle } from '@notifee/react-native';
+import { acceptTaskNotificationAsync, configureNotificationsAsync, requestNotificationPermissionAsync, syncPushTokenToBackendAsync } from './src/notifications';
+import notifee, { EventType } from '@notifee/react-native';
 import { glassButton, glassPanel } from './src/theme/glass';
 
 type AuthScreen = 'Login' | 'Register' | 'ForgotPassword';
@@ -30,7 +30,7 @@ type TaskDraft = { dueDate?: string; dueTime?: string };
 
 const AppContent: React.FC = () => {
     const { width: windowWidth } = useWindowDimensions();
-    const { isAuthenticated, isAuthReady, preferredSchemeLoaded, logout, theme, colorScheme, t, markNotificationsAsSeen, user } = useApp();
+    const { isAuthenticated, isAuthReady, preferredSchemeLoaded, logout, theme, colorScheme, t, markNotificationsAsSeen, user, loadTasks, refreshNotificationBellCount } = useApp();
     const styles = React.useMemo(() => createStyles(theme), [theme]);
     const isDesktop = windowWidth >= 1024;
 
@@ -54,6 +54,14 @@ const AppContent: React.FC = () => {
             } catch (e) {
                 console.warn('Remote message registration failed', e);
             }
+
+            if (user?.id) {
+                try {
+                    await syncPushTokenToBackendAsync(user.id);
+                } catch (e) {
+                    console.warn('Initial push token sync failed', e);
+                }
+            }
         };
 
         void initNotifications();
@@ -72,21 +80,16 @@ const AppContent: React.FC = () => {
                         const data = remoteMessage.data || {};
                         const title = String(notification.title || data.title || 'Task reminder');
                         const body = String(notification.body || data.body || `${data.taskTitle || 'You have a task'} at ${data.dueTime || ''}`);
-                        const rawImage = notification.image || data.image || data.imageUrl;
-                        const image = typeof rawImage === 'string' ? rawImage : rawImage ? String(rawImage) : undefined;
 
                         await notifee.displayNotification({
                             title,
                             body,
                             android: {
                                 channelId: 'tasks',
-                                largeIcon: image || undefined,
-                                style: image ? { type: AndroidStyle.BIGPICTURE, picture: image } : undefined,
-                                sound: 'default',
+                                sound: 'notification',
                             },
                             ios: {
-                                sound: 'default',
-                                attachments: image ? [{ url: image }] : undefined,
+                                sound: 'notification',
                             },
                             data,
                         });
@@ -106,17 +109,32 @@ const AppContent: React.FC = () => {
                     });
                 }
             } catch (e) {
-                console.warn('FCM foreground handler not registered (firebase not ready)', e?.message || e);
+                console.warn('FCM foreground handler not registered (firebase not ready)', e instanceof Error ? e.message : String(e));
             }
         };
+
+        const notifeeForegroundUnsubscribe = notifee.onForegroundEvent(async ({ type, detail }) => {
+            if (type === EventType.ACTION_PRESS && detail.pressAction?.id === 'accept') {
+                const taskId = detail.notification?.data?.taskId;
+                if (typeof taskId === 'string') {
+                    try {
+                        await acceptTaskNotificationAsync(taskId);
+                        await refreshNotificationBellCount();
+                    } catch (error) {
+                        console.warn('Accept task action failed', error);
+                    }
+                }
+            }
+        });
 
         void registerForegroundMessaging();
 
         return () => {
             unsubscribe?.();
             tokenRefreshUnsubscribe?.();
+            notifeeForegroundUnsubscribe();
         };
-    }, [user]);
+    }, [user, loadTasks, refreshNotificationBellCount]);
 
     // ─── Auth Navigation ────────────────────────────────────────────────────────
     const [authScreen, setAuthScreen] = useState<AuthScreen>('Login');
@@ -226,6 +244,7 @@ const AppContent: React.FC = () => {
                     <CalendarSchedule
                         onBack={() => isShowcase ? null : setActiveTab('Home')}
                         onAddTaskPress={(draft) => isShowcase ? null : openCreateTask(draft)}
+                        onTaskPress={(task) => isShowcase ? null : openEditTask(task)}
                         onMenuPress={() => isShowcase ? null : setSidebarOpen(true)}
                     />
                 );

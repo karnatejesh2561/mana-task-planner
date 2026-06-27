@@ -23,12 +23,13 @@ interface ReminderInboxProps {
 
 type ReminderRow = {
     id: string;
-    status: 'pending' | 'sent' | 'failed' | 'cancelled';
+    status: 'pending' | 'sent' | 'failed' | 'cancelled' | 'accepted';
     scheduled_for: string;
     tasks: {
         title: string;
         due_date: string;
         due_time: string;
+        status?: string;
     } | null;
 };
 
@@ -36,7 +37,7 @@ type ReminderRowRaw = {
     id: string;
     status: 'pending' | 'sent' | 'failed' | 'cancelled';
     scheduled_for: string;
-    tasks: { title: string; due_date: string; due_time: string }[] | { title: string; due_date: string; due_time: string } | null;
+    tasks: { title: string; due_date: string; due_time: string; status?: string }[] | { title: string; due_date: string; due_time: string; status?: string } | null;
 };
 
 const formatDateTime = (iso: string) => {
@@ -51,7 +52,7 @@ const formatDateTime = (iso: string) => {
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; bgDark: string; icon: string; label: string }> = {
     pending: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', bgDark: 'rgba(245,158,11,0.20)', icon: 'time-outline', label: 'Pending' },
-    sent: { color: '#22C55E', bg: 'rgba(34,197,94,0.10)', bgDark: 'rgba(34,197,94,0.18)', icon: 'checkmark-circle-outline', label: 'Sent' },
+    accepted: { color: '#22C55E', bg: 'rgba(34,197,94,0.10)', bgDark: 'rgba(34,197,94,0.18)', icon: 'checkmark-circle-outline', label: 'Accepted' },
     failed: { color: '#EF4444', bg: 'rgba(239,68,68,0.10)', bgDark: 'rgba(239,68,68,0.18)', icon: 'close-circle-outline', label: 'Failed' },
     cancelled: { color: '#6B7280', bg: 'rgba(107,114,128,0.10)', bgDark: 'rgba(107,114,128,0.18)', icon: 'ban-outline', label: 'Cancelled' },
 };
@@ -103,19 +104,37 @@ export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
         }
         try {
             const client = assertSupabaseConfigured();
+            const now = new Date().toISOString();
+            const today = new Date().toISOString().split('T')[0];
             const { data, error } = await client
                 .from('task_notifications')
-                .select('id, status, scheduled_for, tasks(title, due_date, due_time)')
+                .select('id, status, scheduled_for, tasks(title, due_date, due_time, status)')
                 .eq('user_id', user.id)
-                .order('scheduled_for', { ascending: false })
+                .in('status', ['pending', 'cancelled'])
+                .lte('scheduled_for', now)
+                .order('scheduled_for', { ascending: true })
                 .limit(100);
             if (error) throw error;
-            const normalized = ((data || []) as ReminderRowRaw[]).map(item => ({
-                id: item.id,
-                status: item.status,
-                scheduled_for: item.scheduled_for,
-                tasks: Array.isArray(item.tasks) ? (item.tasks[0] || null) : item.tasks,
-            }));
+            const normalized = ((data || []) as ReminderRowRaw[])
+                .map(item => {
+                    const task = Array.isArray(item.tasks) ? (item.tasks[0] || null) : item.tasks;
+                    const status: ReminderRow['status'] = item.status === 'cancelled' && task?.status === 'completed'
+                        ? 'accepted'
+                        : item.status;
+                    return {
+                        id: item.id,
+                        status,
+                        scheduled_for: item.scheduled_for,
+                        tasks: task,
+                    };
+                })
+                .filter(item => item.tasks?.due_date === today)
+                .filter(item => item.status === 'pending' || item.status === 'accepted')
+                .sort((a, b) => {
+                    const order: Record<ReminderRow['status'], number> = { pending: 0, accepted: 1, sent: 2, failed: 3, cancelled: 4 };
+                    if (a.status !== b.status) return order[a.status] - order[b.status];
+                    return new Date(a.scheduled_for).getTime() - new Date(b.scheduled_for).getTime();
+                });
             setItems(normalized);
             await refreshNotificationBellCount(user.id);
         } catch (err) {
@@ -138,9 +157,7 @@ export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
     // ── Stats bar counts
     const counts = React.useMemo(() => ({
         pending: items.filter(i => i.status === 'pending').length,
-        sent: items.filter(i => i.status === 'sent').length,
-        failed: items.filter(i => i.status === 'failed').length,
-        cancelled: items.filter(i => i.status === 'cancelled').length,
+        accepted: items.filter(i => i.status === 'accepted').length,
     }), [items]);
 
     if (loading) {
@@ -214,9 +231,8 @@ export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
                     // ── Stats Summary Row ──
                     <View style={styles.statsRow}>
                         {[
-                            { key: 'sent', count: counts.sent },
+                            { key: 'accepted', count: counts.accepted },
                             { key: 'pending', count: counts.pending },
-                            { key: 'failed', count: counts.failed },
                         ].map(({ key, count }, index) => {
                             const cfg = STATUS_CONFIG[key];
                             return (
@@ -253,7 +269,8 @@ export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
                     </View>
                 }
                 renderItem={({ item }) => {
-                    const cfg = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.pending;
+                    const effectiveStatus = item.status === 'accepted' ? 'accepted' : item.status;
+                    const cfg = STATUS_CONFIG[effectiveStatus] ?? STATUS_CONFIG.pending;
                     const title = item.tasks?.title || 'Task reminder';
 
                     return (
