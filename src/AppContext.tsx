@@ -8,7 +8,7 @@ import { mockProjects, mockAssignees } from './mockData';
 import { Language, translate } from './i18n';
 import { buildTimeSlot, formatDbTimeToDisplay, formatDisplayDate, normalizeTimeForDb, parseDisplayDateToIso } from './lib/date';
 import { assertSupabaseConfigured, supabase } from './lib/supabase';
-import { cancelScheduledReminderAsync, scheduleTaskReminderAsync, syncPushTokenToBackendAsync, notifyTaskCreatedAsync, notifyTaskDeletedAsync, notifyTaskCompletedAsync } from './notifications';
+import { cancelScheduledReminderAsync, scheduleTaskReminderAsync, syncPushTokenToBackendAsync, notifyTaskCreatedAsync, notifyTaskDeletedAsync, notifyTaskCompletedAsync, upsertTaskReminderRecordAsync } from './notifications';
 
 export const COLORS = {
     // Premium Brand Colors
@@ -778,6 +778,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                     `Task created: ${taskData.title.trim()} on ${taskData.dueDate} at ${taskData.dueTime}`,
                 );
                 if (newTaskId) {
+                    await upsertTaskReminderRecordAsync(
+                        newTaskId,
+                        user.id,
+                        dueDate,
+                        dueTime,
+                        notificationSettings.defaultReminderMinutes,
+                    );
                     await scheduleTaskReminderAsync(
                         { id: newTaskId, title: taskData.title.trim(), dueDate, dueTime },
                         `Task due soon: ${taskData.title.trim()} at ${taskData.dueTime}`,
@@ -834,6 +841,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 .eq('user_id', user.id);
             if (error) return { success: false, error: error.message };
             await loadTasks(user.id);
+            await upsertTaskReminderRecordAsync(
+                taskId,
+                user.id,
+                dueDate,
+                dueTime,
+                notificationSettings.defaultReminderMinutes,
+            );
             await scheduleTaskReminderAsync(
                 { id: taskId, title: taskData.title.trim(), dueDate, dueTime },
                 `Task due soon: ${taskData.title.trim()} at ${taskData.dueTime}`,

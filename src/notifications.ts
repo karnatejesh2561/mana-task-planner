@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { PermissionsAndroid, Platform } from 'react-native';
 import notifee, { AndroidImportance, AuthorizationStatus, TriggerType, TimestampTrigger } from '@notifee/react-native';
 
 import { supabase } from './lib/supabase';
@@ -29,6 +29,17 @@ export const configureNotificationsAsync = async () => {
 export const requestNotificationPermissionAsync = async () => {
   await configureNotificationsAsync();
   const settings = await notifee.requestPermission();
+
+  if (Platform.OS === 'android' && Number(Platform.Version) >= 31) {
+    const exactAlarmPermission = (PermissionsAndroid.PERMISSIONS as Record<string, string> | undefined)?.SCHEDULE_EXACT_ALARM;
+    if (exactAlarmPermission) {
+      const result = await PermissionsAndroid.request(exactAlarmPermission as any);
+      if (result !== PermissionsAndroid.RESULTS.GRANTED && result !== PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+        console.warn('Exact alarm permission denied; scheduled reminders may not fire');
+      }
+    }
+  }
+
   return (
     settings.authorizationStatus === AuthorizationStatus.AUTHORIZED ||
     settings.authorizationStatus === AuthorizationStatus.PROVISIONAL
@@ -153,11 +164,65 @@ const parseLocalDateTimeToTimestamp = (dueDate: string | undefined, dueTime: str
   return localDate.getTime();
 };
 
-const getScheduledTimestamp = (dueDate: string | undefined, dueTime: string | undefined, reminderMinutes: number) => {
+export const getReminderSchedule = (dueDate: string | undefined, dueTime: string | undefined, reminderMinutes: number) => {
   const baseTimestamp = parseLocalDateTimeToTimestamp(dueDate, dueTime);
-  if (!baseTimestamp) return null;
-  const timestamp = baseTimestamp - Math.max(reminderMinutes, 0) * 60000;
-  return Number.isFinite(timestamp) ? timestamp : null;
+  if (!baseTimestamp) {
+    return { reminderTimestamp: null, dueTimestamp: null };
+  }
+
+  const reminderTimestamp = baseTimestamp - Math.max(reminderMinutes, 0) * 60000;
+  return {
+    reminderTimestamp: Number.isFinite(reminderTimestamp) ? reminderTimestamp : null,
+    dueTimestamp: Number.isFinite(baseTimestamp) ? baseTimestamp : null,
+  };
+};
+
+export const upsertTaskReminderRecordAsync = async (
+  taskId: string,
+  userId: string,
+  dueDate: string | undefined,
+  dueTime: string | undefined,
+  reminderMinutes: number,
+) => {
+  if (!taskId || !userId || !supabase) return false;
+
+  const { reminderTimestamp, dueTimestamp } = getReminderSchedule(dueDate, dueTime, reminderMinutes);
+  const now = Date.now();
+  const scheduledFor = reminderTimestamp && reminderTimestamp > now
+    ? reminderTimestamp
+    : dueTimestamp && dueTimestamp > now
+      ? dueTimestamp
+      : null;
+
+  if (!scheduledFor) {
+    return false;
+  }
+
+  try {
+    const { error } = await supabase
+      .from('task_notifications')
+      .upsert(
+        {
+          task_id: taskId,
+          user_id: userId,
+          scheduled_for: new Date(scheduledFor).toISOString(),
+          status: 'pending',
+          sent_at: null,
+          error_message: null,
+        },
+        { onConflict: 'task_id' },
+      );
+
+    if (error) {
+      console.warn('Unable to persist reminder record', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.warn('Unable to persist reminder record', error);
+    return false;
+  }
 };
 
 const getReminderNotificationId = (taskId: string) => `${taskId}-reminder`;
@@ -210,8 +275,7 @@ export const scheduleTaskReminderAsync = async (
     return false;
   }
 
-  const reminderTimestamp = getScheduledTimestamp(task.dueDate, task.dueTime, reminderMinutes);
-  const dueTimestamp = parseLocalDateTimeToTimestamp(task.dueDate, task.dueTime);
+  const { reminderTimestamp, dueTimestamp } = getReminderSchedule(task.dueDate, task.dueTime, reminderMinutes);
   const now = Date.now();
 
   console.log('Scheduling reminder:', { taskId: task.id, dueDate: task.dueDate, dueTime: task.dueTime, reminderMinutes, reminderTimestamp: reminderTimestamp ? new Date(reminderTimestamp).toISOString() : null, dueTimestamp: dueTimestamp ? new Date(dueTimestamp).toISOString() : null, now: new Date(now).toISOString() });
