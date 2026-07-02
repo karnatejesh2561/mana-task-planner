@@ -1,5 +1,5 @@
 import { PermissionsAndroid, Platform } from 'react-native';
-import notifee, { AndroidImportance, AuthorizationStatus, TriggerType, TimestampTrigger } from '@notifee/react-native';
+import notifee, { AndroidDefaults, AndroidFlags, AndroidImportance, AuthorizationStatus, EventType, TriggerType, TimestampTrigger } from '@notifee/react-native';
 
 import { supabase } from './lib/supabase';
 
@@ -21,7 +21,7 @@ export const configureNotificationsAsync = async () => {
       id: 'tasks',
       name: 'Task updates',
       importance: AndroidImportance.HIGH,
-      sound: 'notification',
+      sound: 'alarm',
     });
   }
 };
@@ -66,12 +66,12 @@ export const notifyTaskCreatedAsync = async (task: TaskNotificationPayload, body
         pressAction: {
           id: 'default',
         },
-        sound: 'notification',
+        sound: 'alarm',
         smallIcon: 'ic_notification',
         largeIcon: 'ic_notification',
       },
       ios: {
-        sound: 'notification',
+        sound: 'alarm',
       },
     });
     console.log('Local task-created notification displayed', task.title);
@@ -102,11 +102,11 @@ export const notifyTaskDeletedAsync = async (task: TaskNotificationPayload, body
         pressAction: {
           id: 'default',
         },
-        sound: 'notification',
+        sound: 'alarm',
         smallIcon: 'ic_notification',   
       },
       ios: {
-        sound: 'notification',
+        sound: 'alarm',
       },
     });
     console.log('Local task-deleted notification displayed', task.title);
@@ -137,11 +137,11 @@ export const notifyTaskCompletedAsync = async (task: TaskNotificationPayload, bo
         pressAction: {
           id: 'default',
         },
-        sound: 'notification',
+        sound: 'alarm',
         smallIcon: 'ic_notification',
       },
       ios: {
-        sound: 'notification',
+        sound: 'alarm',
       },
     });
     console.log('Local task-completed notification displayed', task.title);
@@ -228,6 +228,180 @@ export const upsertTaskReminderRecordAsync = async (
 const getReminderNotificationId = (taskId: string) => `${taskId}-reminder`;
 const getDueNotificationId = (taskId: string) => `${taskId}-due`;
 
+export const snoozeReminderNotificationAsync = async ({
+  notificationId,
+  taskId,
+  userId,
+  snoozeMinutes,
+  title,
+  dueDate,
+  dueTime,
+  body,
+}: {
+  notificationId?: string;
+  taskId?: string;
+  userId?: string;
+  snoozeMinutes: number;
+  title?: string;
+  dueDate?: string;
+  dueTime?: string;
+  body?: string;
+}) => {
+  if (!notificationId && !taskId) return false;
+  if (!supabase) return false;
+
+  const reminderKey = taskId || notificationId || 'reminder';
+  const reminderNotificationId = `${reminderKey}-reminder`;
+  const snoozedAt = new Date(Date.now() + Math.max(snoozeMinutes, 0) * 60000).toISOString();
+
+  try {
+    let updateQuery = supabase.from('task_notifications').update({
+      scheduled_for: snoozedAt,
+      status: 'pending',
+      sent_at: null,
+      error_message: null,
+    });
+
+    if (notificationId) {
+      updateQuery = updateQuery.eq('id', notificationId);
+    } else if (taskId) {
+      updateQuery = updateQuery.eq('task_id', taskId);
+    }
+
+    if (userId) {
+      updateQuery = updateQuery.eq('user_id', userId);
+    }
+
+    const { error } = await updateQuery;
+    if (error) {
+      console.warn('Unable to snooze reminder', error.message);
+      return false;
+    }
+
+    await notifee.cancelNotification(reminderNotificationId);
+
+    const allowed = await requestNotificationPermissionAsync();
+    if (!allowed) {
+      return true;
+    }
+
+    const snoozeTrigger: TimestampTrigger = {
+      type: TriggerType.TIMESTAMP,
+      timestamp: Date.now() + Math.max(snoozeMinutes, 0) * 60000,
+      alarmManager: true,
+    };
+
+    await notifee.createTriggerNotification(
+      {
+        id: reminderNotificationId,
+        title: title || 'Task reminder',
+        body: body || `Reminder snoozed for ${Math.max(snoozeMinutes, 0)} minute${Math.max(snoozeMinutes, 0) === 1 ? '' : 's'}.`,
+        data: {
+          type: 'task-reminder',
+          taskId: taskId || '',
+          dueDate: dueDate || '',
+          dueTime: dueTime || '',
+          snoozed: 'true',
+        },
+        android: {
+          channelId: 'tasks',
+          pressAction: {
+            id: 'default',
+          },
+          actions: [{
+            title: 'Snooze',
+            pressAction: {
+              id: 'snooze',
+            },
+          }, {
+            title: 'Accept',
+            pressAction: {
+              id: 'accept',
+            },
+          }],
+          sound: 'alarm',
+          defaults: [AndroidDefaults.SOUND],
+          loopSound: true,
+          flags: [AndroidFlags.FLAG_INSISTENT],
+          fullScreenAction: {
+            id: 'default',
+          },
+          smallIcon: 'ic_notification',
+        },
+        ios: {
+          sound: 'alarm',
+        },
+      },
+      snoozeTrigger,
+    );
+
+    return true;
+  } catch (error) {
+    console.warn('Unable to snooze reminder notification', error);
+    return false;
+  }
+};
+
+export const handleNotifeeEventAsync = async ({
+  event,
+  userId,
+  snoozeMinutes,
+}: {
+  event: { type: number; detail?: any };
+  userId?: string;
+  snoozeMinutes?: number;
+}) => {
+  if (!event) return false;
+
+  if (event.type === EventType.ACTION_PRESS) {
+    const actionId = event.detail?.pressAction?.id;
+    const taskId = typeof event.detail?.notification?.data?.taskId === 'string' ? event.detail.notification.data.taskId : undefined;
+    const notificationId = typeof event.detail?.notification?.id === 'string' ? event.detail.notification.id : undefined;
+
+    if (actionId === 'accept') {
+      if (typeof taskId === 'string') {
+        await acceptTaskNotificationAsync(taskId);
+      }
+      return true;
+    }
+
+    if (actionId === 'snooze') {
+      const resolvedUserId = userId || (supabase ? (await supabase.auth.getUser()).data.user?.id : undefined);
+      let resolvedSnoozeMinutes = snoozeMinutes;
+
+      if ((resolvedSnoozeMinutes === undefined || resolvedSnoozeMinutes === null) && resolvedUserId && supabase) {
+        const { data } = await supabase
+          .from('user_notification_settings')
+          .select('snooze_minutes')
+          .eq('user_id', resolvedUserId)
+          .maybeSingle();
+        resolvedSnoozeMinutes = data?.snooze_minutes ?? 5;
+      }
+
+      await snoozeReminderNotificationAsync({
+        notificationId,
+        taskId,
+        userId: resolvedUserId,
+        snoozeMinutes: Math.max(resolvedSnoozeMinutes ?? 5, 0),
+        title: event.detail?.notification?.title,
+        dueDate: typeof event.detail?.notification?.data?.dueDate === 'string' ? event.detail.notification.data.dueDate : undefined,
+        dueTime: typeof event.detail?.notification?.data?.dueTime === 'string' ? event.detail.notification.data.dueTime : undefined,
+        body: event.detail?.notification?.body,
+      });
+      return true;
+    }
+
+    return false;
+  }
+
+  if (event.type === EventType.DELIVERED) {
+    // No automatic snooze on delivery; keep alarm ringing until user acts.
+    return false;
+  }
+
+  return false;
+};
+
 export const acceptTaskNotificationAsync = async (taskId: string) => {
   if (!taskId || !supabase) return false;
   try {
@@ -313,7 +487,24 @@ export const scheduleTaskReminderAsync = async (
             pressAction: {
               id: 'default',
             },
-            sound: 'default',
+            actions: [{
+              title: 'Snooze',
+              pressAction: {
+                id: 'snooze',
+              },
+            }, {
+              title: 'Accept',
+              pressAction: {
+                id: 'accept',
+              },
+            }],
+            sound: 'alarm',
+            defaults: [AndroidDefaults.SOUND],
+            loopSound: true,
+            flags: [AndroidFlags.FLAG_INSISTENT],
+            fullScreenAction: {
+              id: 'default',
+            },
             smallIcon: 'ic_notification',
           },
           ios: {
@@ -350,12 +541,23 @@ export const scheduleTaskReminderAsync = async (
               id: 'default',
             },
             actions: [{
+              title: 'Snooze',
+              pressAction: {
+                id: 'snooze',
+              },
+            }, {
               title: 'Accept',
               pressAction: {
                 id: 'accept',
               },
             }],
-            sound: 'default',
+            sound: 'alarm',
+            defaults: [AndroidDefaults.SOUND],
+            loopSound: true,
+            flags: [AndroidFlags.FLAG_INSISTENT],
+            fullScreenAction: {
+              id: 'default',
+            },
             smallIcon: 'ic_notification',
           },
           ios: {

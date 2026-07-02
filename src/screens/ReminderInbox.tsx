@@ -50,11 +50,11 @@ const formatDateTime = (iso: string) => {
     return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ` • ${time}`;
 };
 
-const STATUS_CONFIG: Record<string, { color: string; bg: string; bgDark: string; icon: string; label: string }> = {
-    pending: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', bgDark: 'rgba(245,158,11,0.20)', icon: 'time-outline', label: 'Pending' },
-    accepted: { color: '#22C55E', bg: 'rgba(34,197,94,0.10)', bgDark: 'rgba(34,197,94,0.18)', icon: 'checkmark-circle-outline', label: 'Accepted' },
-    failed: { color: '#EF4444', bg: 'rgba(239,68,68,0.10)', bgDark: 'rgba(239,68,68,0.18)', icon: 'close-circle-outline', label: 'Failed' },
-    cancelled: { color: '#6B7280', bg: 'rgba(107,114,128,0.10)', bgDark: 'rgba(107,114,128,0.18)', icon: 'ban-outline', label: 'Cancelled' },
+const STATUS_CONFIG: Record<string, { color: string; bg: string; bgDark: string; icon: string; labelKey: string }> = {
+    pending: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', bgDark: 'rgba(245,158,11,0.20)', icon: 'time-outline', labelKey: 'pendingLabel' },
+    accepted: { color: '#22C55E', bg: 'rgba(34,197,94,0.10)', bgDark: 'rgba(34,197,94,0.18)', icon: 'checkmark-circle-outline', labelKey: 'accepted' },
+    failed: { color: '#EF4444', bg: 'rgba(239,68,68,0.10)', bgDark: 'rgba(239,68,68,0.18)', icon: 'close-circle-outline', labelKey: 'failed' },
+    cancelled: { color: '#6B7280', bg: 'rgba(107,114,128,0.10)', bgDark: 'rgba(107,114,128,0.18)', icon: 'ban-outline', labelKey: 'cancelled' },
 };
 
 export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
@@ -84,10 +84,10 @@ export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
             if (error) throw error;
             await loadReminders();
             await refreshNotificationBellCount(user.id);
-            Alert.alert('Reminder Snoozed', `Snoozed for ${snoozeMinutes} minute${snoozeMinutes === 1 ? '' : 's'}.`);
+            Alert.alert(t('reminderSnoozed'), t('snoozedForMinutes', { minutes: snoozeMinutes, plural: snoozeMinutes === 1 ? '' : 's' }));
         } catch (err) {
             console.warn('Unable to snooze reminder', err);
-            Alert.alert('Reminder Snooze Failed', 'Unable to snooze this reminder.');
+            Alert.alert(t('reminderSnoozeFailed'), t('unableToSnoozeReminder'));
         } finally {
             setSnoozingIds(prev => prev.filter(id => id !== item.id));
         }
@@ -249,7 +249,7 @@ export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
                                 >
                                     <Ionicons name={cfg.icon as any} size={18} color={cfg.color} />
                                     <Text style={[styles.statCount, { color: cfg.color }]}>{count}</Text>
-                                    <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{cfg.label}</Text>
+                                    <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{t(cfg.labelKey)}</Text>
                                 </View>
                             );
                         })}
@@ -271,7 +271,7 @@ export const ReminderInbox: React.FC<ReminderInboxProps> = ({ onBack }) => {
                 renderItem={({ item }) => {
                     const effectiveStatus = item.status === 'accepted' ? 'accepted' : item.status;
                     const cfg = STATUS_CONFIG[effectiveStatus] ?? STATUS_CONFIG.pending;
-                    const title = item.tasks?.title || 'Task reminder';
+                    const title = item.tasks?.title || t('taskReminder');
 
                     return (
                         <View style={[

@@ -103,8 +103,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 </View>
 
                 {/* Screen Title */}
-                <Text style={styles.screenTitle}>Welcome Back</Text>
-                <Text style={styles.screenSubtitle}>{t('Login to continue to ManaTask') || 'Login to continue to ManaTask'}</Text>
+                <Text style={styles.screenTitle}>{t('loginWelcomeBack')}</Text>
+                <Text style={styles.screenSubtitle}>{t('loginSubtitle')}</Text>
 
                 {/* Error Message */}
                 {errorMsg && (
@@ -200,11 +200,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
                 {/* Sign Up Link */}
                 <View style={styles.bottomRow}>
-                    <Text style={styles.bottomText}>
-                        {t("Don't have an account?") || "Don't have an account? "}
-                    </Text>
+                    <Text style={styles.bottomText}>{t('dontHaveAccount')}</Text>
                     <TouchableOpacity onPress={onNavigateToRegister}>
-                        <Text style={styles.bottomLink}>{t('createAccount') || 'Create Account'}</Text>
+                        <Text style={styles.bottomLink}>{t('createAccount')}</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>

@@ -233,7 +233,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onNavigate, on
                     <View style={styles.headerCenter}>
                         <Text style={[styles.headerTitle, { color: theme.text }]}>{t('editProfile')}</Text>
                         <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
-                            Update your account details
+                            {t('updateAccountDetails')}
                         </Text>
                     </View>
                     <TouchableOpacity style={styles.saveTopButton} onPress={() => void saveProfile()} activeOpacity={0.82}>
@@ -374,8 +374,8 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onNavigate, on
             {/* ── Header ── */}
             <View style={[styles.pageHeader, { backgroundColor: 'transparent' }]}>
                 <View>
-                    <Text style={[styles.pageTitle, { color: theme.text }]}>Settings</Text>
-                    <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]}>Manage your preferences</Text>
+                    <Text style={[styles.pageTitle, { color: theme.text }]}>{t('settings')}</Text>
+                    <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]}>{t('manageYourPreferences')}</Text>
                 </View>
                 <TouchableOpacity
                     style={[
@@ -423,7 +423,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onNavigate, on
                         <Text style={[styles.profileEmail, { color: theme.textSecondary }]} numberOfLines={1}>{email}</Text>
                         <View style={styles.premiumBadge}>
                             <Ionicons name="shield-checkmark" size={13} color="#0A66FF" />
-                            <Text style={styles.premiumText}>Premium User</Text>
+                            <Text style={styles.premiumText}>{t('premiumUser')}</Text>
                         </View>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.3)'} />
@@ -434,38 +434,35 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onNavigate, on
                     iconName="notifications-outline"
                     iconColor="#0A66FF"
                     iconBg={isDark ? 'rgba(10,102,255,0.18)' : 'rgba(10,102,255,0.10)'}
-                    title="Notifications"
-                    subtitle="Manage your notification preferences"
+                    title={t('notifications')}
+                    subtitle={t('manageYourPreferences')}
                     onPress={() => setMode('notifications')}
                     theme={theme}
                 />
-
                 <SettingRowCard
                     iconName="time-outline"
                     iconColor="#FF6B00"
                     iconBg={isDark ? 'rgba(255,107,0,0.18)' : 'rgba(255,107,0,0.10)'}
-                    title="Default Reminder"
-                    subtitle="Set default reminder for tasks"
+                    title={t('defaultReminder')}
+                    subtitle={t('defaultReminderSubtitle')}
                     onPress={() => { setReminderSource('settings'); setMode('defaultReminder'); }}
                     theme={theme}
                 />
-
                 <SettingRowCard
                     iconName="color-palette-outline"
                     iconColor="#8B5CF6"
                     iconBg={isDark ? 'rgba(139,92,246,0.18)' : 'rgba(139,92,246,0.10)'}
-                    title="Appearance"
-                    subtitle="Customize app appearance"
+                    title={t('appearance')}
+                    subtitle={t('appearanceSubtitle')}
                     onPress={toggleTheme}
                     theme={theme}
                 />
-
                 <SettingRowCard
                     iconName="globe-outline"
                     iconColor="#22C55E"
                     iconBg={isDark ? 'rgba(34,197,94,0.18)' : 'rgba(34,197,94,0.10)'}
-                    title="Language"
-                    subtitle="Choose your preferred language"
+                    title={t('language')}
+                    subtitle={t('chooseYourPreferredLanguage')}
                     onPress={() => {
                         const nextLanguage = language === 'en' ? 'te' : 'en';
                         toggleLanguage();
@@ -488,12 +485,12 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onNavigate, on
                     iconName="log-out-outline"
                     iconColor="#FF5A32"
                     iconBg={isDark ? 'rgba(255,90,50,0.20)' : 'rgba(255,90,50,0.12)'}
-                    title="Logout"
-                    subtitle="Sign out from your account"
+                    title={t('logout')}
+                    subtitle={t('signOutSubtitle')}
                     onPress={() => {
-                        Alert.alert('Logout', 'Are you sure you want to sign out?', [
-                            { text: 'Cancel', style: 'cancel' },
-                            { text: 'Logout', style: 'destructive', onPress: onLogout },
+                        Alert.alert(t('logoutConfirmationTitle'), t('logoutConfirmationMessage'), [
+                            { text: t('cancel'), style: 'cancel' },
+                            { text: t('logout'), style: 'destructive', onPress: onLogout },
                         ]);
                     }}
                     theme={theme}

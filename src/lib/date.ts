@@ -22,6 +22,17 @@ export const parseDisplayDateToIso = (value: string) => {
   return date.toISOString().slice(0, 10);
 };
 
+export const parseDisplayDateTimeToTimestamp = (displayDate: string | undefined, displayTime: string | undefined) => {
+  const dateIso = displayDate ? parseDisplayDateToIso(displayDate) : null;
+  const timeValue = displayTime ? normalizeTimeForDb(displayTime) : null;
+  if (!dateIso || !timeValue) return null;
+
+  const [year, month, day] = dateIso.split('-').map(Number);
+  const [hour, minute, second = 0] = timeValue.split(':').map(Number);
+  const localDate = new Date(year, month - 1, day, hour, minute, second);
+  return Number.isFinite(localDate.getTime()) ? localDate.getTime() : null;
+};
+
 export const normalizeTimeForDb = (value: string) => {
   const match = value.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
   if (!match) return null;

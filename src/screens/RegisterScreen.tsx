@@ -130,8 +130,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
                 </View>
 
                 {/* Screen Title */}
-                <Text style={styles.screenTitle}>Create Account</Text>
-                <Text style={styles.screenSubtitle}>{t('Join ManaTask and stay productive') || 'Join ManaTask and stay productive'}</Text>
+                <Text style={styles.screenTitle}>{t('createAccount')}</Text>
+                <Text style={styles.screenSubtitle}>{t('joinManaTask')}</Text>
 
                 {/* Error Message */}
                 {errorMsg && (
@@ -326,7 +326,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
                             style={styles.ctaBtnGradient}
                         >
                             <Text style={styles.ctaBtnText}>
-                                {isLoading ? t('creating') : 'Create Account'}
+                                {isLoading ? t('creating') : t('createAccount')}
                             </Text>
                         </LinearGradient>
                     </TouchableOpacity>
@@ -334,11 +334,9 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
 
                 {/* Login Link */}
                 <View style={styles.bottomRow}>
-                    <Text style={styles.bottomText}>
-                        {t('alreadyHaveAccount') || 'Already have an account? '}
-                    </Text>
+                    <Text style={styles.bottomText}>{t('alreadyHaveAccount')}</Text>
                     <TouchableOpacity onPress={onNavigateToLogin}>
-                        <Text style={styles.bottomLink}>{t('logIn') || 'Login'}</Text>
+                        <Text style={styles.bottomLink}>{t('logIn')}</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>

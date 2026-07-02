@@ -20,7 +20,7 @@ import { ReminderInbox } from './src/screens/ReminderInbox';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Task } from './src/types';
-import { acceptTaskNotificationAsync, configureNotificationsAsync, requestNotificationPermissionAsync, syncPushTokenToBackendAsync } from './src/notifications';
+import { configureNotificationsAsync, handleNotifeeEventAsync, requestNotificationPermissionAsync, syncPushTokenToBackendAsync } from './src/notifications';
 import notifee, { EventType } from '@notifee/react-native';
 import { glassButton, glassPanel } from './src/theme/glass';
 
@@ -30,7 +30,7 @@ type TaskDraft = { dueDate?: string; dueTime?: string };
 
 const AppContent: React.FC = () => {
     const { width: windowWidth } = useWindowDimensions();
-    const { isAuthenticated, isAuthReady, preferredSchemeLoaded, logout, theme, colorScheme, t, markNotificationsAsSeen, user, loadTasks, refreshNotificationBellCount } = useApp();
+    const { isAuthenticated, isAuthReady, preferredSchemeLoaded, logout, theme, colorScheme, t, markNotificationsAsSeen, user, loadTasks, refreshNotificationBellCount, notificationSettings } = useApp();
     const styles = React.useMemo(() => createStyles(theme), [theme]);
     const isDesktop = windowWidth >= 1024;
 
@@ -113,17 +113,21 @@ const AppContent: React.FC = () => {
             }
         };
 
-        const notifeeForegroundUnsubscribe = notifee.onForegroundEvent(async ({ type, detail }) => {
-            if (type === EventType.ACTION_PRESS && detail.pressAction?.id === 'accept') {
-                const taskId = detail.notification?.data?.taskId;
-                if (typeof taskId === 'string') {
-                    try {
-                        await acceptTaskNotificationAsync(taskId);
-                        await refreshNotificationBellCount();
-                    } catch (error) {
-                        console.warn('Accept task action failed', error);
+        const notifeeForegroundUnsubscribe = notifee.onForegroundEvent(async event => {
+            try {
+                const handled = await handleNotifeeEventAsync({
+                    event,
+                    userId: user?.id,
+                    snoozeMinutes: notificationSettings.snoozeMinutes,
+                });
+                if (handled) {
+                    await refreshNotificationBellCount();
+                    if (event.detail?.pressAction?.id === 'accept' && user?.id) {
+                        await loadTasks(user.id);
                     }
                 }
+            } catch (error) {
+                console.warn('Notification action handling failed', error);
             }
         });
 
@@ -134,7 +138,7 @@ const AppContent: React.FC = () => {
             tokenRefreshUnsubscribe?.();
             notifeeForegroundUnsubscribe();
         };
-    }, [user, loadTasks, refreshNotificationBellCount]);
+    }, [user, loadTasks, refreshNotificationBellCount, notificationSettings.snoozeMinutes]);
 
     // ─── Auth Navigation ────────────────────────────────────────────────────────
     const [authScreen, setAuthScreen] = useState<AuthScreen>('Login');

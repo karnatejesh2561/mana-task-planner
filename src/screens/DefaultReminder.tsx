@@ -22,8 +22,8 @@ interface DefaultReminderProps {
 
 type ReminderOption = {
     id: string;
-    label: string;
-    sublabel: string;
+    labelKey: string;
+    sublabelKey: string;
     minutes: number | null;
     iconName: keyof typeof Ionicons.glyphMap;
     iconColor: string;
@@ -36,8 +36,8 @@ type SnoozeOption = '5 minutes' | '10 minutes' | '15 minutes' | '30 minutes' | '
 const REMINDER_OPTIONS: ReminderOption[] = [
     {
         id: 'at_time',
-        label: 'At time of task',
-        sublabel: 'Remind me at the exact due time',
+        labelKey: 'atTimeOfTask',
+        sublabelKey: 'remindMeAtExactDueTime',
         minutes: 0,
         iconName: 'radio-button-on-outline',
         iconColor: '#0A66FF',
@@ -46,8 +46,8 @@ const REMINDER_OPTIONS: ReminderOption[] = [
     },
     {
         id: '5min',
-        label: '5 minutes before',
-        sublabel: 'Remind me 5 minutes early',
+        labelKey: 'snooze5Minutes',
+        sublabelKey: 'remindMe5MinutesEarly',
         minutes: 5,
         iconName: 'timer-outline',
         iconColor: '#22C55E',
@@ -56,8 +56,8 @@ const REMINDER_OPTIONS: ReminderOption[] = [
     },
     {
         id: '15min',
-        label: '15 minutes before',
-        sublabel: 'Remind me 15 minutes early',
+        labelKey: 'snooze15Minutes',
+        sublabelKey: 'remindMe15MinutesEarly',
         minutes: 15,
         iconName: 'time-outline',
         iconColor: '#F59E0B',
@@ -66,8 +66,8 @@ const REMINDER_OPTIONS: ReminderOption[] = [
     },
     {
         id: '30min',
-        label: '30 minutes before',
-        sublabel: 'Remind me half an hour early',
+        labelKey: 'snooze30Minutes',
+        sublabelKey: 'remindMe30MinutesEarly',
         minutes: 30,
         iconName: 'hourglass-outline',
         iconColor: '#FF6B00',
@@ -76,8 +76,8 @@ const REMINDER_OPTIONS: ReminderOption[] = [
     },
     {
         id: '1hr',
-        label: '1 hour before',
-        sublabel: 'Remind me an hour early',
+        labelKey: 'snooze1Hour',
+        sublabelKey: 'remindMe1HourEarly',
         minutes: 60,
         iconName: 'alarm-outline',
         iconColor: '#8B5CF6',
@@ -86,8 +86,8 @@ const REMINDER_OPTIONS: ReminderOption[] = [
     },
     {
         id: 'custom',
-        label: 'Custom',
-        sublabel: 'Choose a custom time',
+        labelKey: 'customReminderTitle',
+        sublabelKey: 'chooseCustomTime',
         minutes: null,
         iconName: 'settings-outline',
         iconColor: '#EC4899',
@@ -96,26 +96,21 @@ const REMINDER_OPTIONS: ReminderOption[] = [
     },
 ];
 
-const SNOOZE_OPTIONS: SnoozeOption[] = ['5 minutes', '10 minutes', '15 minutes', '30 minutes', '1 hour'];
+const SNOOZE_OPTIONS = [
+    { minutes: 5, labelKey: 'snooze5Minutes' },
+    { minutes: 10, labelKey: 'snooze10Minutes' },
+    { minutes: 15, labelKey: 'snooze15Minutes' },
+    { minutes: 30, labelKey: 'snooze30Minutes' },
+    { minutes: 60, labelKey: 'snooze1Hour' },
+] as const;
 
-const labelToSnoozeMinutes = (value: SnoozeOption) => {
-    switch (value) {
-        case '5 minutes': return 5;
-        case '10 minutes': return 10;
-        case '15 minutes': return 15;
-        case '30 minutes': return 30;
-        case '1 hour': return 60;
-        default: return 10;
-    }
-};
-
-const snoozeMinutesToLabel = (minutes: number): SnoozeOption => {
-    if (minutes === 5) return '5 minutes';
-    if (minutes === 10) return '10 minutes';
-    if (minutes === 15) return '15 minutes';
-    if (minutes === 30) return '30 minutes';
-    if (minutes === 60) return '1 hour';
-    return '10 minutes';
+const snoozeMinutesToLabelKey = (minutes: number) => {
+    if (minutes === 5) return 'snooze5Minutes';
+    if (minutes === 10) return 'snooze10Minutes';
+    if (minutes === 15) return 'snooze15Minutes';
+    if (minutes === 30) return 'snooze30Minutes';
+    if (minutes === 60) return 'snooze1Hour';
+    return 'snooze10Minutes';
 };
 
 const reminderMinutesToOptionId = (minutes: number) => {
@@ -150,8 +145,8 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
     const [selectedReminder, setSelectedReminder] = useState<string>(
         reminderMinutesToOptionId(notificationSettings.defaultReminderMinutes),
     );
-    const [selectedSnooze, setSelectedSnooze] = useState<SnoozeOption>(
-        snoozeMinutesToLabel(notificationSettings.snoozeMinutes),
+    const [selectedSnooze, setSelectedSnooze] = useState<string>(
+        snoozeMinutesToLabelKey(notificationSettings.snoozeMinutes),
     );
     const [showSnoozeModal, setShowSnoozeModal] = useState(false);
     const [showCustomModal, setShowCustomModal] = useState(false);
@@ -165,7 +160,7 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
 
     React.useEffect(() => {
         setSelectedReminder(reminderMinutesToOptionId(notificationSettings.defaultReminderMinutes));
-        setSelectedSnooze(snoozeMinutesToLabel(notificationSettings.snoozeMinutes));
+        setSelectedSnooze(snoozeMinutesToLabelKey(notificationSettings.snoozeMinutes));
         setCustomMinutesSaved(
             notificationSettings.defaultReminderMinutes > 0 && ![5, 15, 30, 60].includes(notificationSettings.defaultReminderMinutes)
                 ? `${notificationSettings.defaultReminderMinutes}`
@@ -178,7 +173,7 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
         const result = await updateNotificationSettings(patch);
         setIsSaving(false);
         if (!result.success) {
-            Alert.alert('Default Reminder', result.error || 'Unable to save reminder settings');
+            Alert.alert(t('defaultReminder'), result.error || t('unableSaveReminderSettings'));
         }
     };
 
@@ -204,7 +199,7 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
     };
 
     const getCustomSublabel = () =>
-        customMinutesSaved ? `Remind me ${customMinutesSaved} minutes before` : 'Choose a custom time';
+        customMinutesSaved ? t('remindMeMinutesBefore', { minutes: customMinutesSaved }) : t('chooseCustomTime');
 
     const screenBg = isDark ? '#081220' : '#F0F4FF';
     const cardBg = isDark ? '#0F1D2E' : '#FFFFFF';
@@ -212,7 +207,7 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
 
     // Currently selected option info for hero display
     const activeOption = REMINDER_OPTIONS.find(o => o.id === selectedReminder) ?? REMINDER_OPTIONS[0];
-    const activeLabel = selectedReminder === 'custom' ? getCustomSublabel() : activeOption.sublabel;
+    const activeLabel = selectedReminder === 'custom' ? getCustomSublabel() : t(activeOption.sublabelKey);
 
     if (!notificationSettingsReady) {
         return (
@@ -255,9 +250,9 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
                     <Ionicons name="chevron-back" size={22} color={theme.text} />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
-                    <Text style={[styles.headerTitle, { color: theme.text }]}>Default Reminder</Text>
+                    <Text style={[styles.headerTitle, { color: theme.text }]}>{t('defaultReminder')}</Text>
                     <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
-                        Set your preferred alert timing
+                        {t('setYourPreferredAlertTiming')}
                     </Text>
                 </View>
                 <View style={styles.headerSpacer} />
@@ -287,14 +282,14 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
                         <Ionicons name="time" size={28} color="#FF6B00" />
                     </View>
                     <View style={styles.heroCopy}>
-                        <Text style={[styles.heroLabel, { color: theme.textSecondary }]}>Current Reminder</Text>
-                        <Text style={[styles.heroTitle, { color: theme.text }]}>{activeOption.label}</Text>
+                        <Text style={[styles.heroLabel, { color: theme.textSecondary }]}>{t('currentReminder')}</Text>
+                        <Text style={[styles.heroTitle, { color: theme.text }]}>{t(activeOption.labelKey)}</Text>
                         <Text style={[styles.heroSub, { color: theme.textSecondary }]}>{activeLabel}</Text>
                     </View>
                 </View>
 
                 {/* ── Reminder Time Options ── */}
-                <SectionLabel label="Reminder Time" color={theme.textSecondary} />
+                <SectionLabel label={t('reminderTime')} color={theme.textSecondary} />
 
                 {REMINDER_OPTIONS.map((opt) => {
                     const isSelected = selectedReminder === opt.id;
@@ -369,7 +364,7 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
                 })}
 
                 {/* ── Snooze Section ── */}
-                <SectionLabel label="Snooze Duration" color={theme.textSecondary} />
+                <SectionLabel label={t('snoozeDuration')} color={theme.textSecondary} />
 
                 <TouchableOpacity
                     onPress={() => setShowSnoozeModal(true)}
@@ -431,8 +426,8 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
                                 <Ionicons name="alarm-outline" size={22} color="#6366F1" />
                             </View>
                             <View>
-                                <Text style={[styles.modalTitle, { color: theme.text }]}>Snooze Duration</Text>
-                                <Text style={[styles.modalSub, { color: theme.textSecondary }]}>Select delay time</Text>
+                                <Text style={[styles.modalTitle, { color: theme.text }]}>{t('snoozeDuration')}</Text>
+                                <Text style={[styles.modalSub, { color: theme.textSecondary }]}>{t('selectDelayTime')}</Text>
                             </View>
                         </View>
 
@@ -462,7 +457,7 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
                                         { color: isSelected ? '#0A66FF' : theme.text },
                                         isSelected && { fontWeight: '700' },
                                     ]}>
-                                        {opt}
+                                        {t(opt.labelKey)}
                                     </Text>
                                     {isSelected && (
                                         <View style={styles.checkCircleSmall}>
@@ -505,8 +500,8 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
                                 <Ionicons name="settings-outline" size={22} color="#EC4899" />
                             </View>
                             <View>
-                                <Text style={[styles.modalTitle, { color: theme.text }]}>Custom Reminder</Text>
-                                <Text style={[styles.modalSub, { color: theme.textSecondary }]}>Minutes before the task</Text>
+                                <Text style={[styles.modalTitle, { color: theme.text }]}>{t('customReminderTitle')}</Text>
+                                <Text style={[styles.modalSub, { color: theme.textSecondary }]}>{t('minutesBeforeTask')}</Text>
                             </View>
                         </View>
 
@@ -540,7 +535,7 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
                                 ]}
                                 onPress={() => setShowCustomModal(false)}
                             >
-                                <Text style={[styles.modalBtnCancel, { color: theme.textSecondary }]}>Cancel</Text>
+                                <Text style={[styles.modalBtnCancel, { color: theme.textSecondary }]}>{t('cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.modalBtn, { backgroundColor: '#0A66FF' }]}
@@ -553,7 +548,7 @@ export const DefaultReminder: React.FC<DefaultReminderProps> = ({ onBack }) => {
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 0 }}
                                 />
-                                <Text style={styles.modalBtnSave}>Set Reminder</Text>
+                                <Text style={styles.modalBtnSave}>{t('setReminder')}</Text>
                             </TouchableOpacity>
                         </View>
                     </TouchableOpacity>

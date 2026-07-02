@@ -26,10 +26,10 @@ interface SidebarProps {
 }
 
 const NAV_ITEMS = [
-    { key: 'Home', icon: 'home-outline', label: 'Home', color: '#0A66FF' },
-    { key: 'Calendar', icon: 'calendar-outline', label: 'Calendar', color: '#0A66FF' },
-    { key: 'Notifications', icon: 'notifications-outline', label: 'Reminders', color: '#0A66FF' },
-    { key: 'Settings', icon: 'settings-outline', label: 'Settings', color: '#0A66FF' },
+    { key: 'Home', icon: 'home-outline', label: 'home', color: '#0A66FF' },
+    { key: 'Calendar', icon: 'calendar-outline', label: 'calendar', color: '#0A66FF' },
+    { key: 'Notifications', icon: 'notifications-outline', label: 'notifications', color: '#0A66FF' },
+    { key: 'Settings', icon: 'settings-outline', label: 'settings', color: '#0A66FF' },
 ] as const;
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -39,7 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onNavigate,
     onLogout,
 }) => {
-    const { theme, colorScheme } = useApp();
+    const { theme, colorScheme, t } = useApp();
     const isDark = colorScheme === 'dark';
 
     const slideAnim = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
@@ -183,7 +183,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     { color: isActive ? item.color : theme.text },
                                     isActive && { fontWeight: '700' },
                                 ]}>
-                                    {item.label}
+                                    {t(item.label)}
                                 </Text>
                                 {isActive && (
                                     <View style={styles.navChevron}>
@@ -213,7 +213,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <View style={[styles.navIconBox, { backgroundColor: isDark ? 'rgba(239,68,68,0.18)' : 'rgba(239,68,68,0.10)' }]}>
                         <Ionicons name="log-out-outline" size={20} color="#EF4444" />
                     </View>
-                    <Text style={[styles.navLabel, { color: '#EF4444', fontWeight: '700' }]}>Sign Out</Text>
+                    <Text style={[styles.navLabel, { color: '#EF4444', fontWeight: '700' }]}>{t('signOut')}</Text>
                 </TouchableOpacity>
 
                 {/* App version */}

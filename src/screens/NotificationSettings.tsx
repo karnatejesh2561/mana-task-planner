@@ -265,7 +265,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
         const result = await updateNotificationSettings(nextState as Partial<NotificationSettingsState>);
         setIsSaving(false);
         if (!result.success) {
-            Alert.alert('Notifications', result.error || 'Unable to save notification settings');
+            Alert.alert(t('notifications'), result.error || t('unableSaveNotificationSettings'));
             setState(notificationSettings);
         }
     };
@@ -337,91 +337,73 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                     <Ionicons name="chevron-back" size={22} color={theme.text} />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
-                    <Text style={[styles.headerTitle, { color: theme.text }]}>Notifications</Text>
-                    <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
-                        Manage your preferences
-                    </Text>
+                    <Text style={[styles.headerTitle, { color: theme.text }]}>{t('notifications')}</Text>
+                    <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>{t('manageYourPreferences')}</Text>
                 </View>
                 <View style={styles.headerSpacer} />
-            </View>
-
-            <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.content}
-            >
-                {/* ── Master Toggle Hero Card ── */}
+                {/* Subtle gradient accent when enabled */}
+                {state.masterEnabled && (
+                    <LinearGradient
+                        colors={isDark
+                            ? ['rgba(10,102,255,0.18)', 'transparent']
+                            : ['rgba(10,102,255,0.10)', 'transparent']}
+                        style={StyleSheet.absoluteFill}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                    />
+                )}
                 <View
                     style={[
-                        styles.masterCard,
+                        styles.masterIconBox,
                         {
-                            backgroundColor: isDark
-                                ? state.masterEnabled ? 'rgba(10,102,255,0.14)' : '#0F1D2E'
-                                : state.masterEnabled ? 'rgba(10,102,255,0.08)' : '#FFFFFF',
-                            borderColor: isDark
-                                ? state.masterEnabled ? 'rgba(10,102,255,0.35)' : 'rgba(255,255,255,0.07)'
-                                : state.masterEnabled ? 'rgba(10,102,255,0.25)' : 'rgba(0,0,0,0.07)',
+                            backgroundColor: state.masterEnabled
+                                ? isDark ? 'rgba(10,102,255,0.25)' : 'rgba(10,102,255,0.15)'
+                                : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
                         },
                     ]}
                 >
-                    {/* Subtle gradient accent when enabled */}
-                    {state.masterEnabled && (
-                        <LinearGradient
-                            colors={isDark
-                                ? ['rgba(10,102,255,0.18)', 'transparent']
-                                : ['rgba(10,102,255,0.10)', 'transparent']}
-                            style={StyleSheet.absoluteFill}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                        />
-                    )}
-                    <View
-                        style={[
-                            styles.masterIconBox,
-                            {
-                                backgroundColor: state.masterEnabled
-                                    ? isDark ? 'rgba(10,102,255,0.25)' : 'rgba(10,102,255,0.15)'
-                                    : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-                            },
-                        ]}
-                    >
-                        <Ionicons
-                            name="notifications"
-                            size={26}
-                            color={state.masterEnabled ? '#0A66FF' : (isDark ? '#4A6080' : '#B0BCC8')}
-                        />
-                    </View>
-                    <View style={styles.masterCopy}>
-                        <Text style={[styles.masterTitle, { color: theme.text }]}>
-                            Push Notifications
-                        </Text>
-                        <Text style={[styles.masterSub, { color: theme.textSecondary }]}>
-                            {state.masterEnabled
-                                ? 'Notifications are enabled'
-                                : 'Enable to receive alerts & reminders'}
-                        </Text>
-                    </View>
-                    <Switch
-                        value={state.masterEnabled}
-                        onValueChange={() => toggle('masterEnabled')}
-                        disabled={isSaving}
-                        trackColor={{
-                            false: isDark ? '#1E2D40' : '#E2E8F0',
-                            true: '#0A66FF',
-                        }}
-                        thumbColor="#FFFFFF"
-                        ios_backgroundColor={isDark ? '#1E2D40' : '#E2E8F0'}
+                    <Ionicons
+                        name="notifications"
+                        size={26}
+                        color={state.masterEnabled ? '#0A66FF' : (isDark ? '#4A6080' : '#B0BCC8')}
                     />
                 </View>
+                <View style={styles.masterCopy}>
+                    <Text style={[styles.masterTitle, { color: theme.text }]}>{t('pushNotifications')}</Text>
+                    <Text style={[styles.masterSub, { color: theme.textSecondary }]}>
 
+                        {state.masterEnabled
+                            ? t('notificationsEnabled')
+                            : t('enableAlertsAndReminders')}
+                    </Text>
+                </View>
+                <Switch
+                    value={state.masterEnabled}
+                    onValueChange={() => toggle('masterEnabled')}
+                    disabled={isSaving}
+                    trackColor={{
+                        false: isDark ? '#1E2D40' : '#E2E8F0',
+                        true: '#0A66FF',
+                    }}
+                    thumbColor="#FFFFFF"
+                    ios_backgroundColor={isDark ? '#1E2D40' : '#E2E8F0'}
+                />
+            </View>
+
+            <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={{ padding: 24, paddingBottom: 40 }}
+                showsVerticalScrollIndicator={false}
+            >
                 {/* ── Task Notifications ── */}
-                <SectionLabel label="Task Alerts" theme={theme} />
+                <SectionLabel label={t('taskAlerts')} theme={theme} />
 
                 <ToggleRowCard
                     iconName="notifications-outline"
                     iconColor="#0A66FF"
                     iconBg={isDark ? 'rgba(10,102,255,0.18)' : 'rgba(10,102,255,0.10)'}
-                    title="Task Reminders"
-                    subtitle="Get reminded about upcoming tasks"
+                    title={t('taskReminders')}
+                    subtitle={t('taskRemindersSubtitle')}
                     value={state.taskReminders}
                     onToggle={() => toggle('taskReminders')}
                     disabled={isDisabled}
@@ -432,8 +414,8 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                     iconName="calendar-outline"
                     iconColor="#22C55E"
                     iconBg={isDark ? 'rgba(34,197,94,0.18)' : 'rgba(34,197,94,0.10)'}
-                    title="Task Due Today"
-                    subtitle="Daily summary of today's tasks"
+                    title={t('taskDueToday')}
+                    subtitle={t('taskDueTodaySubtitle')}
                     value={state.taskDueToday}
                     onToggle={() => toggle('taskDueToday')}
                     disabled={isDisabled}
@@ -444,8 +426,8 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                     iconName="time-outline"
                     iconColor="#FF6B00"
                     iconBg={isDark ? 'rgba(255,107,0,0.18)' : 'rgba(255,107,0,0.10)'}
-                    title="Task Overdue"
-                    subtitle="Alerts for tasks that are overdue"
+                    title={t('taskOverdue')}
+                    subtitle={t('taskOverdueSubtitle')}
                     value={state.taskOverdue}
                     onToggle={() => toggle('taskOverdue')}
                     disabled={isDisabled}
@@ -456,8 +438,8 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                     iconName="checkmark-circle-outline"
                     iconColor="#8B5CF6"
                     iconBg={isDark ? 'rgba(139,92,246,0.18)' : 'rgba(139,92,246,0.10)'}
-                    title="Task Completed"
-                    subtitle="Celebrate when you finish a task"
+                    title={t('taskCompleted')}
+                    subtitle={t('taskCompletedSubtitle')}
                     value={state.taskCompleted}
                     onToggle={() => toggle('taskCompleted')}
                     disabled={isDisabled}
@@ -465,14 +447,14 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                 />
 
                 {/* ── General Notifications ── */}
-                <SectionLabel label="General" theme={theme} />
+                <SectionLabel label={t('general')} theme={theme} />
 
                 <ToggleRowCard
                     iconName="bulb-outline"
                     iconColor="#F59E0B"
                     iconBg={isDark ? 'rgba(245,158,11,0.18)' : 'rgba(245,158,11,0.10)'}
-                    title="Tips & Suggestions"
-                    subtitle="Helpful tips to stay productive"
+                    title={t('tipsAndSuggestions')}
+                    subtitle={t('tipsAndSuggestionsSubtitle')}
                     value={state.tipsAndSuggestions}
                     onToggle={() => toggle('tipsAndSuggestions')}
                     disabled={isDisabled}
@@ -483,8 +465,8 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                     iconName="megaphone-outline"
                     iconColor="#EC4899"
                     iconBg={isDark ? 'rgba(236,72,153,0.18)' : 'rgba(236,72,153,0.10)'}
-                    title="Promotions"
-                    subtitle="Updates about new features & offers"
+                    title={t('promotions')}
+                    subtitle={t('promotionsSubtitle')}
                     value={state.promotions}
                     onToggle={() => toggle('promotions')}
                     disabled={isDisabled}
@@ -492,14 +474,14 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                 />
 
                 {/* ── Schedule ── */}
-                <SectionLabel label="Schedule" theme={theme} />
+                <SectionLabel label={t('schedule')} theme={theme} />
 
                 <ChevronRowCard
                     iconName="moon-outline"
                     iconColor="#6366F1"
                     iconBg={isDark ? 'rgba(99,102,241,0.18)' : 'rgba(99,102,241,0.10)'}
-                    title="Quiet Hours"
-                    subtitle="Turn off notifications during this time"
+                    title={t('quietHours')}
+                    subtitle={t('quietHoursSubtitle')}
                     rightLabel={`${QUIET_HOURS_START} – ${QUIET_HOURS_END}`}
                     onPress={() => { /* quiet hours picker */ }}
                     disabled={isDisabled}
@@ -507,14 +489,14 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                 />
 
                 {/* ── Reminder ── */}
-                <SectionLabel label="Reminder" theme={theme} />
+                <SectionLabel label={t('reminder')} theme={theme} />
 
                 <ChevronRowCard
                     iconName="time-outline"
                     iconColor="#0EA5E9"
                     iconBg={isDark ? 'rgba(14,165,233,0.18)' : 'rgba(14,165,233,0.10)'}
-                    title="Default Reminder"
-                    subtitle="Set the default reminder time for new tasks"
+                    title={t('defaultReminder')}
+                    subtitle={t('defaultReminderSubtitle')}
                     onPress={onNavigateToDefaultReminder}
                     disabled={isSaving}
                     theme={theme}

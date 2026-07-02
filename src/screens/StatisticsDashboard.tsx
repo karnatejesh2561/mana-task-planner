@@ -20,39 +20,39 @@ interface StatisticsDashboardProps {
 }
 
 const STAT_CARDS = [
-    { icon: 'checkmark-circle-outline', label: 'Completed', key: 'completed', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', bgDark: 'rgba(34,197,94,0.18)' },
-    { icon: 'hourglass-outline',         label: 'Pending',   key: 'pending',   color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', bgDark: 'rgba(245,158,11,0.18)' },
-    { icon: 'flash-outline',             label: 'Focus Hrs', key: 'focusHours',color: '#0A66FF', bg: 'rgba(10,102,255,0.12)', bgDark: 'rgba(10,102,255,0.18)' },
-    { icon: 'trophy-outline',            label: 'Goals',     key: 'goals',     color: '#EC4899', bg: 'rgba(236,72,153,0.12)', bgDark: 'rgba(236,72,153,0.18)' },
+    { icon: 'checkmark-circle-outline', label: 'done', key: 'completed', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', bgDark: 'rgba(34,197,94,0.18)' },
+    { icon: 'hourglass-outline', label: 'pendingLabel', key: 'pending', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', bgDark: 'rgba(245,158,11,0.18)' },
+    { icon: 'flash-outline', label: 'focusHours', key: 'focusHours', color: '#0A66FF', bg: 'rgba(10,102,255,0.12)', bgDark: 'rgba(10,102,255,0.18)' },
+    { icon: 'trophy-outline', label: 'goals', key: 'goals', color: '#EC4899', bg: 'rgba(236,72,153,0.12)', bgDark: 'rgba(236,72,153,0.18)' },
 ] as const;
 
 const DONUT_DATA = [
-    { name: 'Work',     percentage: 45, color: '#0A66FF' },
+    { name: 'Work', percentage: 45, color: '#0A66FF' },
     { name: 'Personal', percentage: 25, color: '#8B5CF6' },
-    { name: 'Study',    percentage: 20, color: '#FF6B00' },
-    { name: 'Health',   percentage: 10, color: '#22C55E' },
+    { name: 'Study', percentage: 20, color: '#FF6B00' },
+    { name: 'Health', percentage: 10, color: '#22C55E' },
 ];
 
 const DONUT_LEGEND = [
-    { label: 'Work',     color: '#0A66FF' },
+    { label: 'Work', color: '#0A66FF' },
     { label: 'Personal', color: '#8B5CF6' },
-    { label: 'Study',    color: '#FF6B00' },
-    { label: 'Health',   color: '#22C55E' },
+    { label: 'Study', color: '#FF6B00' },
+    { label: 'Health', color: '#22C55E' },
 ];
 
 export const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({ onNavigate }) => {
     const { stats, theme, colorScheme } = useApp();
     const isDark = colorScheme === 'dark';
 
-    const screenBg   = isDark ? '#081220' : '#F0F4FF';
-    const cardBg     = isDark ? '#0F1D2E' : '#FFFFFF';
+    const screenBg = isDark ? '#081220' : '#F0F4FF';
+    const cardBg = isDark ? '#0F1D2E' : '#FFFFFF';
     const cardBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
 
     const statValues: Record<string, string> = {
-        completed:  String(stats.completed),
-        pending:    String(stats.pending),
+        completed: String(stats.completed),
+        pending: String(stats.pending),
         focusHours: String(stats.focusHours),
-        goals:      String(stats.goalsAchieved),
+        goals: String(stats.goalsAchieved),
     };
 
     const chartData = [60, 68, 62, 75, Math.max(0, stats.percentage - 5), stats.percentage, Math.min(100, stats.percentage + 3)];
@@ -127,7 +127,7 @@ export const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({ onNavi
                 </View>
 
                 {/* ── Stat Cards Grid ── */}
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>Analytics</Text>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('analytics')}</Text>
                 <View style={styles.grid}>
                     {STAT_CARDS.map(card => (
                         <View
@@ -154,7 +154,7 @@ export const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({ onNavi
                                 <Ionicons name={card.icon as any} size={20} color={card.color} />
                             </View>
                             <Text style={[styles.statValue, { color: theme.text }]}>{statValues[card.key]}</Text>
-                            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{card.label}</Text>
+                            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{t(card.label)}</Text>
                             <View style={[styles.statBar, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]}>
                                 <View style={[styles.statBarFill, { backgroundColor: card.color, width: '60%' }]} />
                             </View>
@@ -163,7 +163,7 @@ export const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({ onNavi
                 </View>
 
                 {/* ── Weekly Activity ── */}
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>Weekly Activity</Text>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('weeklyActivity')}</Text>
                 <View style={[
                     styles.chartCard,
                     {
@@ -177,7 +177,7 @@ export const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({ onNavi
                 </View>
 
                 {/* ── Task Categories ── */}
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>Task Categories</Text>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('taskCategories')}</Text>
                 <View style={[
                     styles.chartCard,
                     {
@@ -193,7 +193,7 @@ export const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({ onNavi
                         {DONUT_LEGEND.map(item => (
                             <View key={item.label} style={styles.legendItem}>
                                 <View style={[styles.legendDot, { backgroundColor: item.color }]} />
-                                <Text style={[styles.legendText, { color: theme.textSecondary }]}>{item.label}</Text>
+                                <Text style={[styles.legendText, { color: theme.textSecondary }]}>{t(item.label)}</Text>
                             </View>
                         ))}
                     </View>

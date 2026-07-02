@@ -113,14 +113,7 @@ const formatHourLabel = (hour: number) => {
     return `${`${h12}`.padStart(2, '0')}:00 ${period}`;
 };
 
-const getInitialDate = (tasks: Task[]) => {
-    const datedTask = tasks
-        .filter(t => !t.id.startsWith('c-'))
-        .map(t => parseTaskDate(t.dueDate))
-        .filter((d): d is Date => Boolean(d))
-        .sort((a, b) => a.getTime() - b.getTime())[0];
-    return datedTask || startOfDay(new Date());
-};
+const getInitialDate = (_tasks: Task[]) => startOfDay(new Date());
 
 export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({ onAddTaskPress, onTaskPress, onMenuPress }) => {
     const { tasks, theme, language, t } = useApp();

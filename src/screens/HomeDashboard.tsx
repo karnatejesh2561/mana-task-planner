@@ -18,7 +18,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useApp } from '../AppContext';
 import { Task } from '../types';
-import { parseDisplayDateToIso } from '../lib/date';
+import { parseDisplayDateTimeToTimestamp, parseDisplayDateToIso } from '../lib/date';
 
 const { width, height } = Dimensions.get('window');
 
@@ -79,6 +79,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     const firstName = user?.name?.split(' ')[0] || 'User';
     const hour = new Date().getHours();
 
+    const isTaskAcceptable = (task: Task | null) => {
+        if (!task || task.status === 'Completed' || task.status === 'In Progress') return false;
+        const dueTimestamp = parseDisplayDateTimeToTimestamp(task.dueDate, task.dueTime);
+        return dueTimestamp !== null && Date.now() >= dueTimestamp;
+    };
+
     const cardBg = isDark ? 'rgba(25,34,49,0.55)' : '#FFFFFF';
     const cardBorder = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
 
@@ -116,7 +122,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         onTaskPress?.(task);
     };
 
-    const handleAcceptTask = async (task: Task) => {
+    const handleAcceptTask = async (task: Task | null) => {
+        if (!task) return;
         closeDropdown();
         const result = await updateTaskStatus(task.id, 'Completed');
         if (!result.success) {
@@ -193,21 +200,23 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                     {/* Greeting */}
                     <View style={styles.greetingContainer}>
                         <Text style={[styles.greetingText, { color: theme.text }]}>
-                            Good {hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening'} {hour < 12 ? '👋' : hour < 18 ? '🌤️' : '🌙'}
+                            {hour < 12
+                                ? `${t('goodMorning')} 👋`
+                                : hour < 18
+                                    ? `${t('goodAfternoon')} 🌤️`
+                                    : `${t('goodEvening')} 🌙`}
                         </Text>
                         <Text style={[styles.greetingName, { color: '#0A66FF' }]}>{firstName}</Text>
-                        <Text style={[styles.subtitleText, { color: theme.textSecondary }]}>
-                            Let's make today productive
-                        </Text>
+                        <Text style={[styles.subtitleText, { color: theme.textSecondary }]}>{t('makeTodayProductive')}</Text>
                     </View>
                 </View>
 
                 {/* ── Stat Cards ── */}
                 <View style={styles.statsGrid}>
                     {[
-                        { icon: 'calendar-outline', color: '#0A66FF', label: 'Total', value: totalCount },
-                        { icon: 'checkmark-circle-outline', color: '#22C55E', label: 'Done', value: completedCount },
-                        { icon: 'time-outline', color: '#FF6B00', label: 'Pending', value: pendingCount },
+                        { icon: 'calendar-outline', color: '#0A66FF', label: t('total'), value: totalCount },
+                        { icon: 'checkmark-circle-outline', color: '#22C55E', label: t('done'), value: completedCount },
+                        { icon: 'time-outline', color: '#FF6B00', label: t('pendingLabel'), value: pendingCount },
                     ].map(card => (
                         <View
                             key={card.label}
@@ -233,9 +242,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                 {/* ── Today Section ── */}
                 <View style={styles.todaySection}>
                     <View style={styles.todayHeader}>
-                        <Text style={[styles.todayTitle, { color: theme.text }]}>Today's Tasks</Text>
+                        <Text style={[styles.todayTitle, { color: theme.text }]}>{t('todayTasks')}</Text>
                         <View style={styles.taskCountBadge}>
-                            <Text style={styles.taskCountText}>{listTasks.length} Tasks</Text>
+                            <Text style={styles.taskCountText}>{t('tasksCount', { count: listTasks.length })}</Text>
                         </View>
                     </View>
 
@@ -280,7 +289,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                                                 {task.title}
                                             </Text>
                                             <Text style={[styles.taskTime, { color: '#0A66FF' }]} numberOfLines={1}>
-                                                {task.dueTime || 'No time set'}
+                                                {task.dueTime || t('noTimeSet')}
                                             </Text>
                                         </View>
 
@@ -313,10 +322,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                             }]}>
                                 <Ionicons name="checkmark-done-circle-outline" size={32} color="#0A66FF" />
                             </View>
-                            <Text style={[styles.emptyTitle, { color: theme.text }]}>All clear!</Text>
-                            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                                No tasks for today.{'\n'}Tap + to add one.
-                            </Text>
+                            <Text style={[styles.emptyTitle, { color: theme.text }]}>{t('allClear')}</Text>
+                            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>{t('noTasksForToday')}</Text>
                         </View>
                     )}
                 </View>
@@ -376,22 +383,24 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                                         <View style={[styles.dropdownIconBox, { backgroundColor: 'rgba(10,102,255,0.12)' }]}>
                                             <Ionicons name="pencil-outline" size={13} color="#0A66FF" />
                                         </View>
-                                        <Text style={[styles.dropdownText, { color: isDark ? '#F8FAFC' : '#1F2937' }]}>Edit</Text>
+                                        <Text style={[styles.dropdownText, { color: isDark ? '#F8FAFC' : '#1F2937' }]}>{t('edit')}</Text>
                                     </TouchableOpacity>
 
                                     {/* Accept */}
-                                    <TouchableOpacity
-                                        style={[styles.dropdownItem, {
-                                            borderBottomColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
-                                        }]}
-                                        onPress={() => handleAcceptTask(menuTask)}
-                                        activeOpacity={0.8}
-                                    >
-                                        <View style={[styles.dropdownIconBox, { backgroundColor: 'rgba(34,197,94,0.12)' }]}>
-                                            <Ionicons name="checkmark-outline" size={13} color="#22C55E" />
-                                        </View>
-                                        <Text style={[styles.dropdownText, { color: isDark ? '#F8FAFC' : '#1F2937' }]}>Accept</Text>
-                                    </TouchableOpacity>
+                                    {isTaskAcceptable(menuTask) && (
+                                        <TouchableOpacity
+                                            style={[styles.dropdownItem, {
+                                                borderBottomColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
+                                            }]}
+                                            onPress={() => handleAcceptTask(menuTask)}
+                                            activeOpacity={0.8}
+                                        >
+                                            <View style={[styles.dropdownIconBox, { backgroundColor: 'rgba(34,197,94,0.12)' }]}>
+                                                <Ionicons name="checkmark-outline" size={13} color="#22C55E" />
+                                            </View>
+                                            <Text style={[styles.dropdownText, { color: isDark ? '#F8FAFC' : '#1F2937' }]}>{t('accept')}</Text>
+                                        </TouchableOpacity>
+                                    )}
 
                                     {/* Delete */}
                                     <TouchableOpacity
@@ -402,7 +411,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                                         <View style={[styles.dropdownIconBox, { backgroundColor: 'rgba(239,68,68,0.12)' }]}>
                                             <Ionicons name="trash-outline" size={13} color="#EF4444" />
                                         </View>
-                                        <Text style={[styles.dropdownText, { color: '#EF4444' }]}>Delete</Text>
+                                        <Text style={[styles.dropdownText, { color: '#EF4444' }]}>{t('delete')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             </TouchableWithoutFeedback>
